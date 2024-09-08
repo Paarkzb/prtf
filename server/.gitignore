@@ -1,0 +1,7 @@
+.idea
+.vscode
+
+/configs
+/dist
+database.yml
+.env

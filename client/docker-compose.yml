@@ -1,0 +1,16 @@
+services:
+  prtf-web:
+    build:
+      context: .
+    container_name: prtf-web
+    hostname: prtf-web
+    ports:
+      - 8080:80
+    volumes:
+      - prtf-web-volume:/app
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  prtf-web-volume:

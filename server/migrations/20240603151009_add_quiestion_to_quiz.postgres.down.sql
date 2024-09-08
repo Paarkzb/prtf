@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS public.quiz DROP COLUMN questions;
