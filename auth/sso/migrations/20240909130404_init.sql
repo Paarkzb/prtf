@@ -1,12 +1,18 @@
 -- +goose Up
 -- +goose StatementBegin
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS public.users
 (
-    id           INTEGER PRIMARY KEY,
-    
-    email        TEXT    NOT NULL UNIQUE,
-    pass_hash    BLOB    NOT NULL
+    id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username     VARCHAR(255) NOT NULL UNIQUE,
+    email        VARCHAR(255) NOT NULL UNIQUE,
+    pass_hash    VARCHAR(255)    NOT NULL,
+    deleted      BOOLEAN NOT NULL DEFAULT false,
+    created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMP NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_username ON users (username);
 CREATE INDEX IF NOT EXISTS idx_email ON users (email);
 
 CREATE TABLE IF NOT EXISTS apps
@@ -19,5 +25,6 @@ CREATE TABLE IF NOT EXISTS apps
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS apps;
 -- +goose StatementEnd

@@ -20,7 +20,7 @@ type serverAPI struct {
 
 type Auth interface {
 	SignIn(ctx context.Context, username string, password string) (token string, err error)
-	SignUp(ctx context.Context, username string, password string) (userID uuid.UUID, err error)
+	SignUp(ctx context.Context, username string, email string, password string) (userID uuid.UUID, err error)
 }
 
 func Register(gRPCServer *grpc.Server, auth Auth) {
@@ -59,7 +59,7 @@ func (s *serverAPI) SignUp(ctx context.Context, in *ssov1.SignUpRequest) (resp *
 		return nil, status.Error(codes.InvalidArgument, "password is required")
 	}
 
-	uid, err := s.auth.SignUp(ctx, in.GetUsername(), in.GetPassword())
+	uid, err := s.auth.SignUp(ctx, in.GetUsername(), in.GetEmail(), in.GetPassword())
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
 			return nil, status.Error(codes.AlreadyExists, "user already exists")

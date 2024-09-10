@@ -20,7 +20,7 @@ var (
 )
 
 type UserSaver interface {
-	SaveUser(ctx context.Context, username string, passHash []byte) (uid uuid.UUID, err error)
+	SaveUser(ctx context.Context, username string, email string, passHash []byte) (uid uuid.UUID, err error)
 }
 
 type UserProvider interface {
@@ -51,7 +51,7 @@ func NewAuth(log *slog.Logger, userSaver UserSaver, userProvider UserProvider, a
 
 // Register new user in the system and returns user ID
 // If user with given username already exists, returns error
-func (a *Auth) SignUp(ctx context.Context, username string, password string) (uid uuid.UUID, err error) {
+func (a *Auth) SignUp(ctx context.Context, username string, email string, password string) (uid uuid.UUID, err error) {
 	const op = "Auth.SignUp"
 
 	log := a.log.With(
@@ -67,7 +67,7 @@ func (a *Auth) SignUp(ctx context.Context, username string, password string) (ui
 		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
 	}
 
-	id, err := a.userSaver.SaveUser(ctx, username, passHash)
+	id, err := a.userSaver.SaveUser(ctx, username, email, passHash)
 	if err != nil {
 		log.Error("failed to save user", sl.Err(err))
 
