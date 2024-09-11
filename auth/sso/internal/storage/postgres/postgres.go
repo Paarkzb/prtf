@@ -2,10 +2,13 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sso/internal/domain/models"
+	"sso/internal/storage"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -38,6 +41,7 @@ func (s *Storage) SaveUser(ctx context.Context, username string, email string, p
 	err = tx.QueryRow(ctx, query, username, email, passHash).Scan(&id)
 	if err != nil {
 		_ = tx.Rollback(ctx)
+
 		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -45,5 +49,37 @@ func (s *Storage) SaveUser(ctx context.Context, username string, email string, p
 }
 
 func (s *Storage) GetUserByUsername(ctx context.Context, username string) (models.User, error) {
+	const op = "storage.postgres.GetUserByUsername"
 
+	var user models.User
+
+	query := `SELECT id, username, email FROM public.users WHERE username=$1`
+
+	err := s.db.QueryRow(ctx, query, username).Scan(&user.ID, &user.Username, &user.Email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+		return user, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
+func (s *Storage) GetAppById(ctx context.Context, appID uuid.UUID) (models.App, error) {
+	const op = "storage.postgres.GetUserByUsername"
+
+	var app models.App
+
+	query := `SELECT id, name, secret FROM public.apps WHERE id=$1`
+
+	err := s.db.QueryRow(ctx, query, appID).Scan(&app.ID, &app.Name, &app.Secret)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return app, fmt.Errorf("%s: %w", op, storage.ErrAppNotFound)
+		}
+		return app, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return app, nil
 }
