@@ -1,4 +1,6 @@
 env: "local"
+migrationPath: "migrations"
+storagePath: "postgres://postgres:postgres@localhost:5432/postgres"
 grpc:
   port: 44044
   timeout: 10h

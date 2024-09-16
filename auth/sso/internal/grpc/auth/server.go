@@ -1,9 +1,9 @@
-package auth
+package authgrpc
 
 import (
 	"context"
 	"errors"
-	"sso/internal/services/auth"
+	authservice "sso/internal/services/auth"
 	"sso/internal/storage"
 	ssov1 "sso/protos/gen/go/sso"
 
@@ -39,7 +39,7 @@ func (s *serverAPI) SignIn(ctx context.Context, in *ssov1.SignInRequest) (resp *
 
 	token, err := s.auth.SignIn(ctx, in.GetUsername(), in.GetPassword())
 	if err != nil {
-		if errors.Is(err, auth.ErrInvalidCredentials) {
+		if errors.Is(err, authservice.ErrInvalidCredentials) {
 			return nil, status.Error(codes.InvalidArgument, "invalid email or password")
 		}
 
