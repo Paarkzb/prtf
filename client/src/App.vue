@@ -41,6 +41,7 @@ function logout() {
           </fwb-list-group>
         </fwb-dropdown>
         <fwb-navbar-link link="/chat"> Чат </fwb-navbar-link>
+        <fwb-navbar-link link="/quiz-complete"> Прохождение квиза </fwb-navbar-link>
       </fwb-navbar-collapse>
     </template>
     <template #right-side>

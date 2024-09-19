@@ -39,6 +39,11 @@ const router = createRouter({
       ]
     },
     {
+      path: '/quiz-complete',
+      name: 'quiz-complete',
+      component: () => import('../views/quiz/QuizCompleteView.vue')
+    },
+    {
       path: '/chat',
       name: 'chat',
       component: () => import('../views/chat/ChatView.vue')
