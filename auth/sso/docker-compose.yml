@@ -1,0 +1,42 @@
+services:
+  prtf-auth-server:
+    depends_on:
+      - prtf-auth-postgres
+    build:
+      context: .
+    container_name: prtf-auth-server
+    hostname: prtf-auth-server
+    networks:
+      - prtf-net
+    ports:
+      - 8085:8085
+    volumes:
+      - prtf-auth-server-volume:/app
+    env_file:
+      - .env
+    deploy:
+      restart_policy:
+        condition: on-failure
+  prtf-auth-postgres:
+    image: postgres
+    container_name: prtf-auth-postgres
+    hostname: prtf-auth-postgres
+    networks:
+      - prtf-net
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?database password not set}
+    ports:
+      - 5435:5432
+    volumes:
+      - prtf-auth-postgres-volume:/var/lib/postgresql/data
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  prtf-auth-postgres-volume:
+  prtf-auth-server-volume:
+
+networks:
+  prtf-net:
+    driver: bridge
