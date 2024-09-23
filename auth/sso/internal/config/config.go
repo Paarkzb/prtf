@@ -40,6 +40,24 @@ func MustLoad() *Config {
 	return &cfg
 }
 
+func MustLoadPath(configPath string) *Config {
+	if configPath == "" {
+		panic("config path is empty")
+	}
+
+	if _, err := os.Stat(configPath); err != nil {
+		panic("config file does not exist: " + configPath)
+	}
+
+	var cfg Config
+
+	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
+		panic("config path is empty: " + err.Error())
+	}
+
+	return &cfg
+}
+
 // fetch configPath from command line of env
 func fetchConfigPath() string {
 	var res string
