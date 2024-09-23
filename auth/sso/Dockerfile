@@ -16,7 +16,7 @@ FROM scratch AS build-release-stage
 
 WORKDIR /app
 
-COPY --from=build-stage /config ./
+COPY --from=build-stage /app/config/config_local.yaml  ./config/config_local.yaml
 COPY --from=build-stage /prtf-auth-server /prtf-auth-server
 
 # Bind TCP port
