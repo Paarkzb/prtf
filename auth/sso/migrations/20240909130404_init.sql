@@ -17,7 +17,7 @@ CREATE INDEX IF NOT EXISTS idx_email ON users (email);
 
 CREATE TABLE IF NOT EXISTS apps
 (
-    id     INTEGER PRIMARY KEY,
+    id     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name   TEXT NOT NULL UNIQUE,
     secret TEXT NOT NULL UNIQUE
 );
