@@ -36,6 +36,9 @@ func NewSuite(t *testing.T) (context.Context, *Suite) {
 		cancelCtx()
 	})
 
+	// var opts []grpc.DialOption
+	// cc, err := grpc.NewClient(grpcAddress(cfg), opts...)
+
 	cc, err := grpc.NewClient(grpcAddress(cfg), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("grpc server connection failed: %v", err)
@@ -58,7 +61,7 @@ func configPath() string {
 		return v
 	}
 
-	return "/app/config/config_local.yaml"
+	return "../config/config_local.yaml"
 }
 
 func grpcAddress(cfg *config.Config) string {

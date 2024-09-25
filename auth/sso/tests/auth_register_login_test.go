@@ -4,15 +4,18 @@ import (
 	ssov1 "sso/protos/gen/go/sso"
 	"sso/tests/suite"
 	"testing"
+	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
 	appID     = "36c604ca-5f22-447c-a2a7-f220d2c1193b"
-	appSecret = "test-secret"
+	appSecret = "hwekjfskladjvhiweuhfwieuh"
 )
 
 func TestRegisterLogin_Login_HappyPath(t *testing.T) {
@@ -38,5 +41,23 @@ func TestRegisterLogin_Login_HappyPath(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// TODO: Проверить результат
+	token := respLogin.GetToken()
+	require.NotEmpty(t, token)
+
+	loginTime := time.Now()
+
+	tokenParsed, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		return []byte(appSecret), nil
+	})
+	require.NoError(t, err)
+
+	claims, ok := tokenParsed.Claims.(jwt.MapClaims)
+	require.True(t, ok)
+
+	assert.Equal(t, respReg.GetUserId(), claims["uid"].(uuid.UUID))
+	assert.Equal(t, username, claims["username"].(string))
+
+	const deltaSeconds = 1
+
+	assert.InDelta(t, loginTime.Add(st.Cfg.TokenTTL).Unix(), claims["exp"].(float64), deltaSeconds)
 }
