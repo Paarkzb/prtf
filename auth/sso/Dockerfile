@@ -10,7 +10,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /prtf-auth-server ./cmd/sso
 
 
 FROM build-stage AS run-test-stage
-RUN go test -v ./...
+RUN go test ./tests -count=1 -v
 
 FROM scratch AS build-release-stage
 
