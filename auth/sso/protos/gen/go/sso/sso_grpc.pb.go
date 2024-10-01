@@ -29,7 +29,7 @@ const (
 //
 // Service for managing auth
 type AuthClient interface {
-	// Registre new user
+	// Register new user
 	SignUp(ctx context.Context, in *SignUpRequest, opts ...grpc.CallOption) (*SignUpResponse, error)
 	// Login user and return token
 	SignIn(ctx context.Context, in *SignInRequest, opts ...grpc.CallOption) (*SignInResponse, error)

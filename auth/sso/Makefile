@@ -5,3 +5,6 @@ migrate-down:
 
 test-migrate-up:
 	goose -dir .\tests\migrations postgres "host=localhost port=5435 user=postgres password=postgres dbname=postgres sslmode=disable" up
+
+test:
+	go test ./tests -count=1 -v

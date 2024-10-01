@@ -24,7 +24,12 @@ func NewStorage(ctx context.Context, storagePath string) (*Storage, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return &Storage{db: db}, err
+	err = db.Ping(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &Storage{db: db}, nil
 }
 
 func (s *Storage) SaveUser(ctx context.Context, username string, email string, passHash []byte) (uid uuid.UUID, err error) {

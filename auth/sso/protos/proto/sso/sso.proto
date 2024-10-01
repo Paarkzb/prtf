@@ -6,7 +6,7 @@ option go_package = "sso.v1;ssov1";
 
 // Service for managing auth
 service Auth {
-    // Registre new user
+    // Register new user
     rpc SignUp (SignUpRequest) returns (SignUpResponse);
 
     // Login user and return token
