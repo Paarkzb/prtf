@@ -28,8 +28,8 @@ func TestRegisterLogin_Login_HappyPath(t *testing.T) {
 	pass := gofakeit.Password(true, true, true, true, false, passDefaultLen)
 
 	respReg, err := st.AuthClient.SignUp(ctx, &ssov1.SignUpRequest{
-		Username: username,
 		Email:    email,
+		Username: username,
 		Password: pass,
 	})
 	require.NoError(t, err)
