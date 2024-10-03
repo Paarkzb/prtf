@@ -40,7 +40,6 @@ func NewSuite(t *testing.T) (context.Context, *Suite) {
 	if err != nil {
 		t.Fatalf("grpc server connection failed: %v", err)
 	}
-	defer cc.Close()
 
 	authClient := ssov1.NewAuthClient(cc)
 
