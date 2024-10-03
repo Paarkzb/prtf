@@ -58,9 +58,9 @@ func (s *Storage) GetUserByUsername(ctx context.Context, username string) (model
 
 	var user models.User
 
-	query := `SELECT id, username, email FROM public.users WHERE username=$1`
+	query := `SELECT id, username, email, pass_hash FROM public.users WHERE username=$1`
 
-	err := s.db.QueryRow(ctx, query, username).Scan(&user.ID, &user.Username, &user.Email)
+	err := s.db.QueryRow(ctx, query, username).Scan(&user.ID, &user.Username, &user.Email, &user.PassHash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return user, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)

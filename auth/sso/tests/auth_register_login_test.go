@@ -8,20 +8,18 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	appID     = "36c604ca-5f22-447c-a2a7-f220d2c1193b"
-	appSecret = "hwekjfskladjvhiweuhfwieuh"
+	appID          = "36c604ca-5f22-447c-a2a7-f220d2c1193b"
+	appSecret      = "hwekjfskladjvhiweuhfwieuh"
+	passDefaultLen = 10
 )
 
 func TestRegisterLogin_Login_HappyPath(t *testing.T) {
 	ctx, st := suite.NewSuite(t)
-
-	const passDefaultLen = 10
 
 	username := gofakeit.Username()
 	email := gofakeit.Email()
@@ -54,10 +52,35 @@ func TestRegisterLogin_Login_HappyPath(t *testing.T) {
 	claims, ok := tokenParsed.Claims.(jwt.MapClaims)
 	require.True(t, ok)
 
-	assert.Equal(t, respReg.GetUserId(), claims["uid"].(uuid.UUID))
+	assert.Equal(t, respReg.GetUserId(), claims["uid"].(string))
 	assert.Equal(t, username, claims["username"].(string))
 
 	const deltaSeconds = 1
 
 	assert.InDelta(t, loginTime.Add(st.Cfg.TokenTTL).Unix(), claims["exp"].(float64), deltaSeconds)
+}
+
+func TestRegisterLogin_DuplicatedRegistration(t *testing.T) {
+	ctx, st := suite.NewSuite(t)
+
+	username := gofakeit.Username()
+	email := gofakeit.Email()
+	password := gofakeit.Password(true, true, true, true, false, passDefaultLen)
+
+	respReg, err := st.AuthClient.SignUp(ctx, &ssov1.SignUpRequest{
+		Username: username,
+		Email:    email,
+		Password: password,
+	})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, respReg.GetUserId())
+
+	respReg, err = st.AuthClient.SignUp(ctx, &ssov1.SignUpRequest{
+		Username: username,
+		Email:    email,
+		Password: password,
+	})
+	require.Error(t, err)
+	assert.Empty(t, respReg.GetUserId())
+	assert.ErrorContains(t, err, "failed to register user")
 }
