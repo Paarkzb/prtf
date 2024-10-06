@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 func NewToken(user models.User, duration time.Duration) (string, error) {
@@ -21,4 +22,8 @@ func NewToken(user models.User, duration time.Duration) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func ParseToken(token string) (uuid.UUID, error) {
+
 }

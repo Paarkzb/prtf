@@ -11,6 +11,9 @@ service Auth {
 
     // Login user and return token
     rpc SignIn (SignInRequest) returns (SignInResponse);
+
+    // IsAdmin checks whether user is admin
+    rpc IsAdmin (IsAdminRequest) returns (IsAdminResponse); 
 }
 
 // TODO: На будущее
@@ -38,3 +41,10 @@ message SignInResponse {
     string token = 1; // Auth token of the logged user
 }
 
+message IsAdminRequest {
+    string token = 1;
+}
+
+message IsAdminResponse {
+    bool is_admin = 1;
+}
