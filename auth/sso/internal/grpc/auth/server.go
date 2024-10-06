@@ -40,7 +40,7 @@ func (s *serverAPI) SignIn(ctx context.Context, in *ssov1.SignInRequest) (resp *
 	token, err := s.auth.SignIn(ctx, in.GetUsername(), in.GetPassword())
 	if err != nil {
 		if errors.Is(err, authservice.ErrInvalidCredentials) {
-			return nil, status.Error(codes.InvalidArgument, "invalid email or password ")
+			return nil, status.Error(codes.InvalidArgument, "invalid username or password ")
 		}
 
 		return nil, status.Error(codes.Internal, "failed to login")

@@ -88,3 +88,30 @@ func (s *Storage) GetAppById(ctx context.Context, appID uuid.UUID) (models.App, 
 
 	return app, nil
 }
+
+func (s *Storage) IsAdmin(ctx context.Context, token string) (bool, error) {
+	const op = "storage.postgres.IsAdmin"
+
+	// parse token
+	tuid := 1
+
+	query := `SELECT id FROM public.users_admins WHERE rf_users_id=$1`
+
+	var uid uuid.UUID
+	err := s.db.QueryRow(ctx, query, tuid).Scan(&uid)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+
+	isAdmin := true
+	if uid == uuid.Nil {
+		isAdmin = false
+	}
+
+	return isAdmin, nil
+}

@@ -84,3 +84,103 @@ func TestRegisterLogin_DuplicatedRegistration(t *testing.T) {
 	assert.Empty(t, respReg.GetUserId())
 	assert.ErrorContains(t, err, "failed to register user")
 }
+
+func TestRegister_FailCases(t *testing.T) {
+	ctx, st := suite.NewSuite(t)
+
+	tests := []struct {
+		name        string
+		username    string
+		email       string
+		password    string
+		expectedErr string
+	}{
+		{
+			name:        "SignUp with empty password",
+			username:    gofakeit.Username(),
+			email:       gofakeit.Email(),
+			password:    "",
+			expectedErr: "password is required",
+		},
+		{
+			name:        "SignUp with empty username",
+			username:    "",
+			email:       gofakeit.Email(),
+			password:    gofakeit.Password(true, true, true, true, false, passDefaultLen),
+			expectedErr: "username is required",
+		},
+		{
+			name:        "SignUp with empty both",
+			username:    "",
+			email:       gofakeit.Email(),
+			password:    "",
+			expectedErr: "username is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := st.AuthClient.SignUp(ctx, &ssov1.SignUpRequest{
+				Username: tt.username,
+				Email:    tt.email,
+				Password: tt.password,
+			})
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tt.expectedErr)
+		})
+	}
+}
+
+func TestLogin_FailCases(t *testing.T) {
+	ctx, st := suite.NewSuite(t)
+
+	tests := []struct {
+		name        string
+		username    string
+		email       string
+		password    string
+		expectedErr string
+	}{
+		{
+			name:        "SignIn with empty password",
+			username:    gofakeit.Username(),
+			password:    "",
+			expectedErr: "password is required",
+		},
+		{
+			name:        "SignIn with empty username",
+			username:    "",
+			password:    gofakeit.Password(true, true, true, true, false, passDefaultLen),
+			expectedErr: "username is required",
+		},
+		{
+			name:        "SignIn with empty both",
+			username:    "",
+			password:    "",
+			expectedErr: "username is required",
+		},
+		{
+			name:        "SignIn with not-matching username or password",
+			username:    gofakeit.Username(),
+			password:    gofakeit.Password(true, true, true, true, false, passDefaultLen),
+			expectedErr: "failed to login",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := st.AuthClient.SignUp(ctx, &ssov1.SignUpRequest{
+				Email:    gofakeit.Email(),
+				Password: gofakeit.Password(true, true, true, true, false, passDefaultLen),
+			})
+			require.NoError(t, err)
+
+			_, err = st.AuthClient.SignIn(ctx, &ssov1.SignInRequest{
+				Username: tt.username,
+				Password: tt.password,
+			})
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tt.expectedErr)
+		})
+	}
+}
