@@ -42,7 +42,7 @@ message SignInResponse {
 }
 
 message IsAdminRequest {
-    string token = 1;
+    string userId = 1;
 }
 
 message IsAdminResponse {
