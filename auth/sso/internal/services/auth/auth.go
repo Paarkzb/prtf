@@ -25,6 +25,7 @@ type UserSaver interface {
 
 type UserProvider interface {
 	GetUserByUsername(ctx context.Context, username string) (models.User, error)
+	IsAdmin(ctx context.Context, userId uuid.UUID) (bool, error)
 }
 
 type AppProvider interface {
@@ -117,4 +118,29 @@ func (a *Auth) SignIn(ctx context.Context, username string, password string) (st
 	}
 
 	return token, nil
+}
+
+func (a *Auth) IsAdmin(ctx context.Context, userId string) (bool, error) {
+	const op = "Auth.IsAdmin"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.String("userId", userId),
+	)
+
+	uid, err := uuid.FromBytes([]byte(userId))
+	if err != nil {
+		return false, fmt.Errorf("%s, %w", op, err)
+	}
+
+	log.Info("checking if user is admin")
+
+	isAdmin, err := a.userProvider.IsAdmin(ctx, uid)
+	if err != nil {
+		return false, fmt.Errorf("%s, %w", op, err)
+	}
+
+	log.Info("checked if user is admin", slog.Bool("is_admin", isAdmin))
+
+	return isAdmin, nil
 }
