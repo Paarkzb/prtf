@@ -21,6 +21,7 @@ type serverAPI struct {
 type Auth interface {
 	SignIn(ctx context.Context, username string, password string) (token string, err error)
 	SignUp(ctx context.Context, username string, email string, password string) (userID uuid.UUID, err error)
+	IsAdmin(ctx context.Context, userId string) (bool, error)
 }
 
 func Register(gRPCServer *grpc.Server, auth Auth) {
@@ -69,4 +70,21 @@ func (s *serverAPI) SignUp(ctx context.Context, in *ssov1.SignUpRequest) (resp *
 	}
 
 	return &ssov1.SignUpResponse{UserId: uid.String()}, nil
+}
+
+func (s *serverAPI) IsAdmin(ctx context.Context, in *ssov1.IsAdminRequest) (*ssov1.IsAdminResponse, error) {
+	if in.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "accessToken is required")
+	}
+
+	isAdmin, err := s.auth.IsAdmin(ctx, in.UserId)
+	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+
+		return nil, status.Error(codes.Internal, "failed to check admin status")
+	}
+
+	return &ssov1.IsAdminResponse{IsAdmin: isAdmin}, nil
 }
