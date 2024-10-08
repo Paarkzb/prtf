@@ -14,7 +14,7 @@ import (
 
 const (
 	appID          = "36c604ca-5f22-447c-a2a7-f220d2c1193b"
-	appSecret      = "hwekjfskladjvhiweuhfwieuh"
+	appSecret      = "hwekjf#hadsujfDPDSFJO21adho@JDSOV*@79Q"
 	passDefaultLen = 10
 )
 
@@ -163,13 +163,14 @@ func TestLogin_FailCases(t *testing.T) {
 			name:        "SignIn with not-matching username or password",
 			username:    gofakeit.Username(),
 			password:    gofakeit.Password(true, true, true, true, false, passDefaultLen),
-			expectedErr: "failed to login",
+			expectedErr: "invalid username or password",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := st.AuthClient.SignUp(ctx, &ssov1.SignUpRequest{
+				Username: gofakeit.Username(),
 				Email:    gofakeit.Email(),
 				Password: gofakeit.Password(true, true, true, true, false, passDefaultLen),
 			})
