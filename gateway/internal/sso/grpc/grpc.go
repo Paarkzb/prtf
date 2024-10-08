@@ -62,7 +62,7 @@ func (c *Client) IsAdmin(ctx context.Context, userID uuid.UUID) (bool, error) {
 	const op = "grpc.IsAdmin"
 
 	resp, err := c.api.IsAdmin(ctx, &ssov1.IsAdminRequest{
-		UserId: userID.String(),
+		UserID: userID.String(),
 	})
 	if err != nil {
 		return false, fmt.Errorf("%s, %w", op, err)

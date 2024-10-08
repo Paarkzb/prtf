@@ -14,6 +14,8 @@ service Auth {
 
     // IsAdmin checks whether user is admin
     rpc IsAdmin (IsAdminRequest) returns (IsAdminResponse); 
+
+    rpc UserIdentity (UserIdentityRequest) returns (UserIdentityResponse);
 }
 
 // TODO: На будущее
@@ -29,7 +31,7 @@ message SignUpRequest {
 }
 
 message SignUpResponse {
-    string user_id = 1; // User id of the registered user
+    string userID = 1; // User id of the registered user
 }
 
 message SignInRequest {
@@ -38,13 +40,22 @@ message SignInRequest {
 }
 
 message SignInResponse {
-    string token = 1; // Auth token of the logged user
+    string accessToken = 1; // Auth token of the logged user
 }
 
 message IsAdminRequest {
-    string userId = 1;
+    string userID = 1;
 }
 
 message IsAdminResponse {
     bool is_admin = 1;
+}
+
+message UserIdentityRequest {
+    string accessToken = 1;
+}
+
+message UserIdentityResponse {
+    bool auth = 1;
+    string userID = 2;
 }

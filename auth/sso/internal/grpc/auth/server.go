@@ -21,7 +21,8 @@ type serverAPI struct {
 type Auth interface {
 	SignIn(ctx context.Context, username string, password string) (token string, err error)
 	SignUp(ctx context.Context, username string, email string, password string) (userID uuid.UUID, err error)
-	IsAdmin(ctx context.Context, userId string) (bool, error)
+	IsAdmin(ctx context.Context, userId string) (isAdmin bool, err error)
+	UserIdentity(ctx context.Context, accessToken string) (auth bool, userID uuid.UUID, err error)
 }
 
 func Register(gRPCServer *grpc.Server, auth Auth) {
@@ -47,7 +48,7 @@ func (s *serverAPI) SignIn(ctx context.Context, in *ssov1.SignInRequest) (resp *
 		return nil, status.Error(codes.Internal, "failed to login")
 	}
 
-	return &ssov1.SignInResponse{Token: token}, nil
+	return &ssov1.SignInResponse{AccessToken: token}, nil
 
 }
 
@@ -69,15 +70,15 @@ func (s *serverAPI) SignUp(ctx context.Context, in *ssov1.SignUpRequest) (resp *
 		return nil, status.Error(codes.Internal, "failed to register user")
 	}
 
-	return &ssov1.SignUpResponse{UserId: uid.String()}, nil
+	return &ssov1.SignUpResponse{UserID: uid.String()}, nil
 }
 
 func (s *serverAPI) IsAdmin(ctx context.Context, in *ssov1.IsAdminRequest) (*ssov1.IsAdminResponse, error) {
-	if in.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "accessToken is required")
+	if in.UserID == "" {
+		return nil, status.Error(codes.InvalidArgument, "userID is required")
 	}
 
-	isAdmin, err := s.auth.IsAdmin(ctx, in.UserId)
+	isAdmin, err := s.auth.IsAdmin(ctx, in.UserID)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
 			return nil, status.Error(codes.NotFound, "user not found")
@@ -87,4 +88,17 @@ func (s *serverAPI) IsAdmin(ctx context.Context, in *ssov1.IsAdminRequest) (*sso
 	}
 
 	return &ssov1.IsAdminResponse{IsAdmin: isAdmin}, nil
+}
+
+func (s *serverAPI) UserIdentity(ctx context.Context, in *ssov1.UserIdentityRequest) (*ssov1.UserIdentityResponse, error) {
+	if in.AccessToken == "" {
+		return nil, status.Error(codes.InvalidArgument, "accessToken is required")
+	}
+
+	auth, userId, err := s.auth.UserIdentity(ctx, in.AccessToken)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "authentication failed")
+	}
+
+	return &ssov1.UserIdentityResponse{Auth: auth, UserID: userId.String()}, nil
 }

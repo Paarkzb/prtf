@@ -31,7 +31,7 @@ func TestRegisterLogin_Login_HappyPath(t *testing.T) {
 		Password: pass,
 	})
 	require.NoError(t, err)
-	assert.NotEmpty(t, respReg.GetUserId())
+	assert.NotEmpty(t, respReg.GetUserID())
 
 	respLogin, err := st.AuthClient.SignIn(ctx, &ssov1.SignInRequest{
 		Username: username,
@@ -39,7 +39,7 @@ func TestRegisterLogin_Login_HappyPath(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	token := respLogin.GetToken()
+	token := respLogin.GetAccessToken()
 	require.NotEmpty(t, token)
 
 	loginTime := time.Now()
@@ -52,7 +52,7 @@ func TestRegisterLogin_Login_HappyPath(t *testing.T) {
 	claims, ok := tokenParsed.Claims.(jwt.MapClaims)
 	require.True(t, ok)
 
-	assert.Equal(t, respReg.GetUserId(), claims["uid"].(string))
+	assert.Equal(t, respReg.GetUserID(), claims["uid"].(string))
 	assert.Equal(t, username, claims["username"].(string))
 
 	const deltaSeconds = 1
@@ -73,7 +73,7 @@ func TestRegisterLogin_DuplicatedRegistration(t *testing.T) {
 		Password: password,
 	})
 	assert.NoError(t, err)
-	assert.NotEmpty(t, respReg.GetUserId())
+	assert.NotEmpty(t, respReg.GetUserID())
 
 	respReg, err = st.AuthClient.SignUp(ctx, &ssov1.SignUpRequest{
 		Username: username,
@@ -81,7 +81,7 @@ func TestRegisterLogin_DuplicatedRegistration(t *testing.T) {
 		Password: password,
 	})
 	require.Error(t, err)
-	assert.Empty(t, respReg.GetUserId())
+	assert.Empty(t, respReg.GetUserID())
 	assert.ErrorContains(t, err, "failed to register user")
 }
 
