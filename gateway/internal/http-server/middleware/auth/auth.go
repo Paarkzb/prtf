@@ -9,6 +9,8 @@ import (
 	"prtf-gateway/internal/lib/logger/sl"
 	"prtf-gateway/internal/sso/grpc"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -57,7 +59,17 @@ func NewAuthMiddleware(log *slog.Logger, permProvider grpc.Client) func(next htt
 
 			log.Info("user authorized", slog.Any("claims", claims))
 
-			isAdmin, err := permProvider.IsAdmin(r.Context(), claims.UserId)
+			userID, err := uuid.Parse(claims["uid"].(string))
+			if err != nil {
+				log.Warn("failed to parse claims", sl.Err(err))
+
+				ctx := context.WithValue(r.Context(), errorKey, ErrInvalidToken)
+				next.ServeHTTP(w, r.WithContext(ctx))
+
+				return
+			}
+
+			isAdmin, err := permProvider.IsAdmin(r.Context(), userID)
 			if err != nil {
 				log.Error("failed to check if user is admin", sl.Err(err))
 
@@ -67,7 +79,7 @@ func NewAuthMiddleware(log *slog.Logger, permProvider grpc.Client) func(next htt
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), uidKey, claims.UserId)
+			ctx := context.WithValue(r.Context(), uidKey, userID)
 			ctx = context.WithValue(r.Context(), isAdminKey, isAdmin)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
