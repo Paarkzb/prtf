@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Auth_SignUp_FullMethodName  = "/auth.Auth/SignUp"
-	Auth_SignIn_FullMethodName  = "/auth.Auth/SignIn"
-	Auth_IsAdmin_FullMethodName = "/auth.Auth/IsAdmin"
+	Auth_SignUp_FullMethodName       = "/auth.Auth/SignUp"
+	Auth_SignIn_FullMethodName       = "/auth.Auth/SignIn"
+	Auth_IsAdmin_FullMethodName      = "/auth.Auth/IsAdmin"
+	Auth_UserIdentity_FullMethodName = "/auth.Auth/UserIdentity"
 )
 
 // AuthClient is the client API for Auth service.
@@ -36,6 +37,7 @@ type AuthClient interface {
 	SignIn(ctx context.Context, in *SignInRequest, opts ...grpc.CallOption) (*SignInResponse, error)
 	// IsAdmin checks whether user is admin
 	IsAdmin(ctx context.Context, in *IsAdminRequest, opts ...grpc.CallOption) (*IsAdminResponse, error)
+	UserIdentity(ctx context.Context, in *UserIdentityRequest, opts ...grpc.CallOption) (*UserIdentityResponse, error)
 }
 
 type authClient struct {
@@ -76,6 +78,16 @@ func (c *authClient) IsAdmin(ctx context.Context, in *IsAdminRequest, opts ...gr
 	return out, nil
 }
 
+func (c *authClient) UserIdentity(ctx context.Context, in *UserIdentityRequest, opts ...grpc.CallOption) (*UserIdentityResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserIdentityResponse)
+	err := c.cc.Invoke(ctx, Auth_UserIdentity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServer is the server API for Auth service.
 // All implementations must embed UnimplementedAuthServer
 // for forward compatibility.
@@ -88,6 +100,7 @@ type AuthServer interface {
 	SignIn(context.Context, *SignInRequest) (*SignInResponse, error)
 	// IsAdmin checks whether user is admin
 	IsAdmin(context.Context, *IsAdminRequest) (*IsAdminResponse, error)
+	UserIdentity(context.Context, *UserIdentityRequest) (*UserIdentityResponse, error)
 	mustEmbedUnimplementedAuthServer()
 }
 
@@ -106,6 +119,9 @@ func (UnimplementedAuthServer) SignIn(context.Context, *SignInRequest) (*SignInR
 }
 func (UnimplementedAuthServer) IsAdmin(context.Context, *IsAdminRequest) (*IsAdminResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsAdmin not implemented")
+}
+func (UnimplementedAuthServer) UserIdentity(context.Context, *UserIdentityRequest) (*UserIdentityResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserIdentity not implemented")
 }
 func (UnimplementedAuthServer) mustEmbedUnimplementedAuthServer() {}
 func (UnimplementedAuthServer) testEmbeddedByValue()              {}
@@ -182,6 +198,24 @@ func _Auth_IsAdmin_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Auth_UserIdentity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserIdentityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).UserIdentity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_UserIdentity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).UserIdentity(ctx, req.(*UserIdentityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Auth_ServiceDesc is the grpc.ServiceDesc for Auth service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -200,6 +234,10 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsAdmin",
 			Handler:    _Auth_IsAdmin_Handler,
+		},
+		{
+			MethodName: "UserIdentity",
+			Handler:    _Auth_UserIdentity_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

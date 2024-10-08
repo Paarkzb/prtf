@@ -128,7 +128,7 @@ func (a *Auth) IsAdmin(ctx context.Context, userId string) (bool, error) {
 		slog.String("userId", userId),
 	)
 
-	uid, err := uuid.FromBytes([]byte(userId))
+	uid, err := uuid.Parse(userId)
 	if err != nil {
 		return false, fmt.Errorf("%s, %w", op, err)
 	}
@@ -143,4 +143,26 @@ func (a *Auth) IsAdmin(ctx context.Context, userId string) (bool, error) {
 	log.Info("checked if user is admin", slog.Bool("is_admin", isAdmin))
 
 	return isAdmin, nil
+}
+
+func (a *Auth) UserIdentity(ctx context.Context, accessToken string) (bool, uuid.UUID, error) {
+	const op = "Auth.UserIdentity"
+
+	log := a.log.With(
+		slog.String("op", op),
+	)
+
+	log.Info("authenticate user")
+	claims, err := jwt.ParseToken(accessToken)
+	if err != nil {
+		return false, uuid.Nil, fmt.Errorf("%s, %w", op, err)
+	}
+
+	uid, err := uuid.Parse(claims["uid"].(string))
+	if err != nil {
+		return false, uuid.Nil, fmt.Errorf("%s, %w", op, err)
+	}
+	log.Info("user authenticated", slog.String("user_id", uid.String()))
+
+	return true, uid, nil
 }

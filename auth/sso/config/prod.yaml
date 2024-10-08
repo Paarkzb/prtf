@@ -1,0 +1,6 @@
+env: "prod"
+migrationPath: "migrations"
+storagePath: "postgres://postgres:postgres@prtf-auth-postgres:5432/postgres"
+grpc:
+  port: 8085
+  timeout: 10s
