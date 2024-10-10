@@ -12,7 +12,7 @@ RUN go mod download
 COPY ./ ./
  
 # Build
-RUN CGO_ENABLED=0 GOOS=linux go build -o /prtf-server ./cmd
+RUN CGO_ENABLED=0 GOOS=linux go build -o /prtf-quiz-server ./cmd
 
 # Run the tests in the container
 FROM build-stage AS run-test-stage
@@ -23,10 +23,11 @@ FROM scratch AS build-release-stage
 
 WORKDIR /app
 
-COPY --from=build-stage /prtf-server /prtf-server
+COPY /configs/config.yaml /app/configs/config.yaml
+COPY --from=build-stage /prtf-quiz-server /prtf-quiz-server
 
 # Bind TCP port
 EXPOSE 8086
 
 # Run
-ENTRYPOINT [ "/prtf-server" ]
+ENTRYPOINT [ "/prtf-quiz-server" ]
