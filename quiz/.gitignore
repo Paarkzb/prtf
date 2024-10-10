@@ -1,7 +1,7 @@
 .idea
 .vscode
 
-/configs
+# /configs
 /dist
 database.yml
-.env
+# .env

@@ -16,7 +16,8 @@ FROM scratch AS build-release-stage
 
 WORKDIR /app
 
-# docker cp .\config\config_local.yaml prtf-auth-server:/app/config/config_local.yaml
+
+COPY /config/config_local.yaml /app/config/config_local.yaml
 COPY --from=build-stage /prtf-auth-server /prtf-auth-server
 
 # Bind TCP port

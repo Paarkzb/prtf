@@ -1,0 +1,17 @@
+version: "3.8"
+
+include:
+  - ../auth/sso/docker-compose.yml
+  - ../quiz/docker-compose.yml
+
+services:
+  nginx:
+    build:
+      context: .
+    networks:
+      - api-gateway-network
+    ports:
+      - "80:80"
+
+networks:
+  api-gateway-network:
