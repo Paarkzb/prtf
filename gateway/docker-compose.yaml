@@ -1,5 +1,3 @@
-version: "3.8"
-
 include:
   - ../auth/sso/docker-compose.yml
   - ../quiz/docker-compose.yml
@@ -9,9 +7,12 @@ services:
     build:
       context: .
     networks:
-      - api-gateway-network
+      - api_gateway_network
     ports:
       - "80:80"
+    deploy:
+      restart_policy:
+        condition: on-failure
 
 networks:
-  api-gateway-network:
+  api_gateway_network:

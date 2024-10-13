@@ -1,12 +1,11 @@
-# syntax=docker/dockerfile:1
-FROM golang:1.22.1  AS build-stage
+FROM golang:1.22.1-alpine  AS build-stage
  
 WORKDIR /app
  
 COPY ./ ./
 RUN go mod download
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /prtf-auth-server ./cmd/sso
+RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/sso
 
 
 FROM build-stage AS run-test-stage
@@ -16,12 +15,12 @@ FROM scratch AS build-release-stage
 
 WORKDIR /app
 
-
-COPY /config/config_local.yaml /app/config/config_local.yaml
-COPY --from=build-stage /prtf-auth-server /prtf-auth-server
+COPY --from=build-stage /server /server
+COPY config/config_local.yaml /config/config_local.yaml
 
 # Bind TCP port
 EXPOSE 8085
 
 # Run
-ENTRYPOINT [ "/prtf-auth-server" ]
+ENTRYPOINT [ "/server" ]
+
