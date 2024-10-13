@@ -1,40 +1,40 @@
 services:
-  prtf-quiz-server:
+  prtf_quiz_server:
     depends_on:
-      - prtf-quiz-postgres
+      - prtf_quiz_postgres
     build:
       context: .
-    container_name: prtf-quiz-server
-    hostname: prtf-quiz-server
+    container_name: prtf_quiz_server
+    hostname: prtf_quiz_server
     networks:
-      - prtf-quiz-net
+      - prtf_quiz_net
     ports:
       - 8086:8086
     volumes:
-      - prtf-quiz-server-volume:/app
+      - prtf_quiz_server_volume:/app
     deploy:
       restart_policy:
         condition: on-failure
-  prtf-quiz-postgres:
+  prtf_quiz_postgres:
     image: postgres
-    container_name: prtf-quiz-postgres
-    hostname: prtf-quiz-postgres
+    container_name: prtf_quiz_postgres
+    hostname: prtf_quiz_postgres
     networks:
-      - prtf-quiz-net
+      - prtf_quiz_net
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD:?database password not set}
     ports:
       - 5436:5432
     volumes:
-      - prtf-quiz-postgres-volume:/var/lib/postgresql/data
+      - prtf_quiz_postgres_volume:/var/lib/postgresql/data
     deploy:
       restart_policy:
         condition: on-failure
 
 volumes:
-  prtf-quiz-postgres-volume:
-  prtf-quiz-server-volume:
+  prtf_quiz_postgres_volume:
+  prtf_quiz_server_volume:
 
 networks:
-  prtf-quiz-net:
+  prtf_quiz_net:
     driver: bridge

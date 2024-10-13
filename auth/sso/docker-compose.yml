@@ -1,26 +1,26 @@
 services:
-  prtf-auth-server:
+  prtf_auth_server:
     depends_on:
-      - prtf-auth-postgres
+      - prtf_auth_postgres
     build:
       context: .
-    container_name: prtf-auth-server
-    hostname: prtf-auth-server
+    container_name: prtf_auth_server
+    hostname: prtf_auth_server
     networks:
       - prtf-net
     ports:
       - 8085:8085
     volumes:
-      - prtf-auth-server-volume:/app
+      - prtf_auth_server_volume:/app
     env_file:
       - .env
     deploy:
       restart_policy:
         condition: on-failure
-  prtf-auth-postgres:
+  prtf_auth_postgres:
     image: postgres
-    container_name: prtf-auth-postgres
-    hostname: prtf-auth-postgres
+    container_name: prtf_auth_postgres
+    hostname: prtf_auth_postgres
     networks:
       - prtf-net
     environment:
@@ -28,14 +28,14 @@ services:
     ports:
       - 5435:5432
     volumes:
-      - prtf-auth-postgres-volume:/var/lib/postgresql/data
+      - prtf_auth_postgres_volume:/var/lib/postgresql/data
     deploy:
       restart_policy:
         condition: on-failure
 
 volumes:
-  prtf-auth-postgres-volume:
-  prtf-auth-server-volume:
+  prtf_auth_postgres_volume:
+  prtf_auth_server_volume:
 
 networks:
   prtf-net:

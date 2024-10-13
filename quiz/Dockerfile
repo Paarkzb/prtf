@@ -1,5 +1,4 @@
-# syntax=docker/dockerfile:1
-FROM golang:1.21.4  AS build-stage
+FROM golang:1.21.4-alpine  AS build-stage
  
 # Set destination for COPY
 WORKDIR /app
@@ -12,7 +11,7 @@ RUN go mod download
 COPY ./ ./
  
 # Build
-RUN CGO_ENABLED=0 GOOS=linux go build -o /prtf-quiz-server ./cmd
+RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd
 
 # Run the tests in the container
 FROM build-stage AS run-test-stage
@@ -23,11 +22,12 @@ FROM scratch AS build-release-stage
 
 WORKDIR /app
 
-COPY /configs/config.yaml /app/configs/config.yaml
-COPY --from=build-stage /prtf-quiz-server /prtf-quiz-server
+COPY --from=build-stage /server /server
+# COPY configs/config.yaml configs/config.yaml 
 
 # Bind TCP port
 EXPOSE 8086
 
 # Run
-ENTRYPOINT [ "/prtf-quiz-server" ]
+ENTRYPOINT [ "/server" ]
+
