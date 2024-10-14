@@ -7,7 +7,7 @@ services:
     build:
       context: .
     networks:
-      - api_gateway_network
+      - prtf_gateway_network
     ports:
       - "80:80"
     deploy:
@@ -15,4 +15,4 @@ services:
         condition: on-failure
 
 networks:
-  api_gateway_network:
+  prtf_gateway_network:
