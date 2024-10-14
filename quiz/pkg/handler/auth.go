@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"prtf"
 
@@ -42,6 +43,7 @@ func (h *Handler) signIn(c *gin.Context) {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	log.Println(token)
 
 	userId, err := h.service.Authorization.ParseToken(token)
 	if err != nil {

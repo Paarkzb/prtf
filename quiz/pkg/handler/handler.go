@@ -19,8 +19,8 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	mux := gin.Default()
 
 	mux.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"http://localhost:80"},
-		// AllowAllOrigins:  true,
+		// AllowOrigins: []string{"http://localhost:80"},
+		AllowAllOrigins:  true,
 		AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type", "Accept", "Accept-Encoding", "User-Agent", "Cache-Control", "Pragma", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Content-Length"},

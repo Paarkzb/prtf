@@ -7,7 +7,7 @@ services:
     container_name: prtf_auth_server
     hostname: prtf_auth_server
     networks:
-      - prtf-net
+      - prtf_auth_net
     ports:
       - 8085:8085
     volumes:
@@ -22,7 +22,7 @@ services:
     container_name: prtf_auth_postgres
     hostname: prtf_auth_postgres
     networks:
-      - prtf-net
+      - prtf_auth_net
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?database password not set}
     ports:
@@ -38,5 +38,5 @@ volumes:
   prtf_auth_server_volume:
 
 networks:
-  prtf-net:
+  prtf_auth_net:
     driver: bridge
