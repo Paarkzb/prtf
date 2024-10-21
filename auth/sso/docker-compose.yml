@@ -10,6 +10,7 @@ services:
       - prtf_auth_net
     ports:
       - 8085:8085
+      - 8084:8084
     volumes:
       - prtf_auth_server_volume:/app
     env_file:

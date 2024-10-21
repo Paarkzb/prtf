@@ -4,3 +4,5 @@ storagePath: "postgres://postgres:postgres@prtf-auth-postgres:5432/postgres"
 grpc:
   port: 8085
   timeout: 10s
+http:
+  port: 8084
