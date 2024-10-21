@@ -2,20 +2,42 @@ syntax = "proto3";
 
 package auth;
 
+import "google/api/annotations.proto";
+
 option go_package = "sso.v1;ssov1";
 
 // Service for managing auth
 service Auth {
     // Register new user
-    rpc SignUp (SignUpRequest) returns (SignUpResponse);
+    rpc SignUp (SignUpRequest) returns (SignUpResponse) {
+        option (google.api.http) = {
+            post: "/v1/sign-up"
+            body: "*"
+        };
+    }
 
     // Login user and return token
-    rpc SignIn (SignInRequest) returns (SignInResponse);
+    rpc SignIn (SignInRequest) returns (SignInResponse){
+        option (google.api.http) = {
+            post: "/v1/sign-in"
+            body: "*"
+        };
+    }
 
     // IsAdmin checks whether user is admin
-    rpc IsAdmin (IsAdminRequest) returns (IsAdminResponse); 
+    rpc IsAdmin (IsAdminRequest) returns (IsAdminResponse) {
+        option (google.api.http) = {
+            post: "/v1/is-admin"
+            body: "*"
+        };
+    }
 
-    rpc UserIdentity (UserIdentityRequest) returns (UserIdentityResponse);
+    rpc UserIdentity (UserIdentityRequest) returns (UserIdentityResponse) {
+        option (google.api.http) = {
+            post: "/v1/user-identity"
+            body: "*"
+        };
+    }
 }
 
 // TODO: На будущее
