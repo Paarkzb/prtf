@@ -11,6 +11,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
 
@@ -46,6 +47,8 @@ func NewApp(log *slog.Logger, authService authgrpc.Auth, port int) *App {
 		logging.UnaryServerInterceptor(InterceptorLogger(log), loggingOpts...),
 		recovery.UnaryServerInterceptor(recoveryOpts...),
 	))
+
+	reflection.Register(gRPCServer)
 
 	authgrpc.Register(gRPCServer, authService)
 

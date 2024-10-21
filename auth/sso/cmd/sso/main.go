@@ -23,10 +23,14 @@ func main() {
 
 	ctx := context.Background()
 
-	application := app.NewApp(ctx, log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
+	application := app.NewApp(ctx, log, cfg.GRPC.Port, cfg.HTTP.Port, cfg.StoragePath, cfg.TokenTTL)
 
 	go func() {
 		application.GRPCServer.MustRun()
+	}()
+
+	go func() {
+		application.HTTPServer.MustRun()
 	}()
 
 	// Graceful shutdown

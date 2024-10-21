@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Env            string        `yaml:"env" env-default:"local"`
 	GRPC           GRPCConfig    `yaml:"grpc"`
+	HTTP           HTTPConfig    `yaml:"http"`
 	MigrationsPath string        `yaml:"migrationPath"`
 	StoragePath    string        `yaml:"storagePath"`
 	TokenTTL       time.Duration `yaml:"token_ttl" env-default:"1h"`
@@ -19,6 +20,9 @@ type Config struct {
 type GRPCConfig struct {
 	Port    int           `yaml:"port"`
 	Timeout time.Duration `yaml:"timeout"`
+}
+type HTTPConfig struct {
+	Port int `yaml:"port"`
 }
 
 func MustLoad() *Config {

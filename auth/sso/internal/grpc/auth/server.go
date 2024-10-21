@@ -27,6 +27,7 @@ type Auth interface {
 
 func Register(gRPCServer *grpc.Server, auth Auth) {
 	ssov1.RegisterAuthServer(gRPCServer, &serverAPI{auth: auth})
+
 }
 
 func (s *serverAPI) SignIn(ctx context.Context, in *ssov1.SignInRequest) (resp *ssov1.SignInResponse, err error) {
