@@ -1,0 +1,4 @@
+include:
+  - gateway/docker-compose.yaml
+  - auth/sso/docker-compose.yaml
+  - quiz/docker-compose.yaml
