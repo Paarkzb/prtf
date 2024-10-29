@@ -3,6 +3,7 @@ package authgrpc
 import (
 	"context"
 	"errors"
+	"sso/internal/domain/models"
 	authservice "sso/internal/services/auth"
 	"sso/internal/storage"
 	ssov1 "sso/protos/gen/go/sso"
@@ -19,7 +20,7 @@ type serverAPI struct {
 }
 
 type Auth interface {
-	SignIn(ctx context.Context, username string, password string) (token string, err error)
+	SignIn(ctx context.Context, username string, password string) (tokens models.Tokens, err error)
 	SignUp(ctx context.Context, username string, email string, password string) (userID uuid.UUID, err error)
 	IsAdmin(ctx context.Context, userId string) (isAdmin bool, err error)
 	UserIdentity(ctx context.Context, accessToken string) (auth bool, userID uuid.UUID, err error)
@@ -40,7 +41,7 @@ func (s *serverAPI) SignIn(ctx context.Context, in *ssov1.SignInRequest) (resp *
 		return nil, status.Error(codes.InvalidArgument, "password is required")
 	}
 
-	token, err := s.auth.SignIn(ctx, in.GetUsername(), in.GetPassword())
+	tokens, err := s.auth.SignIn(ctx, in.GetUsername(), in.GetPassword())
 	if err != nil {
 		if errors.Is(err, authservice.ErrInvalidCredentials) {
 			return nil, status.Error(codes.InvalidArgument, "invalid username or password")
@@ -49,7 +50,7 @@ func (s *serverAPI) SignIn(ctx context.Context, in *ssov1.SignInRequest) (resp *
 		return nil, status.Error(codes.Internal, "failed to login")
 	}
 
-	return &ssov1.SignInResponse{AccessToken: token}, nil
+	return &ssov1.SignInResponse{AccessToken: tokens.AccessToken, RefreshToken: tokens.RefreshToken}, nil
 
 }
 

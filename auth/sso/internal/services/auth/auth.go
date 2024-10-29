@@ -28,25 +28,33 @@ type UserProvider interface {
 	IsAdmin(ctx context.Context, userId uuid.UUID) (bool, error)
 }
 
+type TokenProvider interface {
+	SaveRefreshToken(ctx context.Context, userId uuid.UUID, refreshToken string, refreshTokenTTL time.Duration) error
+}
+
 type AppProvider interface {
 	GetAppById(ctx context.Context, appID uuid.UUID) (models.App, error)
 }
 
 type Auth struct {
-	log          *slog.Logger
-	userSaver    UserSaver
-	userProvider UserProvider
-	appProvider  AppProvider
-	tokenTTL     time.Duration
+	log             *slog.Logger
+	userSaver       UserSaver
+	userProvider    UserProvider
+	appProvider     AppProvider
+	tokenProvider   TokenProvider
+	accessTokenTTL  time.Duration
+	refreshTokenTTL time.Duration
 }
 
-func NewAuth(log *slog.Logger, userSaver UserSaver, userProvider UserProvider, appProvider AppProvider, tokenTTL time.Duration) *Auth {
+func NewAuth(log *slog.Logger, userSaver UserSaver, userProvider UserProvider, appProvider AppProvider, tokenProvider TokenProvider, accessTokenTTL time.Duration, refreshTokenTTL time.Duration) *Auth {
 	return &Auth{
-		log:          log,
-		userSaver:    userSaver,
-		userProvider: userProvider,
-		appProvider:  appProvider,
-		tokenTTL:     tokenTTL,
+		log:             log,
+		userSaver:       userSaver,
+		userProvider:    userProvider,
+		appProvider:     appProvider,
+		tokenProvider:   tokenProvider,
+		accessTokenTTL:  accessTokenTTL,
+		refreshTokenTTL: refreshTokenTTL,
 	}
 }
 
@@ -81,7 +89,7 @@ func (a *Auth) SignUp(ctx context.Context, username string, email string, passwo
 // SignIn checks if user with given credentials exists in the system and returns access token
 // If user exists and password is incorrect, returns error
 // If user doesn't exist, returns error
-func (a *Auth) SignIn(ctx context.Context, username string, password string) (string, error) {
+func (a *Auth) SignIn(ctx context.Context, username string, password string) (models.Tokens, error) {
 	const op = "Auth.SignIn"
 
 	log := a.log.With(
@@ -91,33 +99,52 @@ func (a *Auth) SignIn(ctx context.Context, username string, password string) (st
 
 	log.Info("attempting to sign in user")
 
+	var tokens models.Tokens
+
 	user, err := a.userProvider.GetUserByUsername(ctx, username)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
 			a.log.Warn("user not found", sl.Err(err))
 
-			return "", fmt.Errorf("%s, %w", op, ErrInvalidCredentials)
+			return tokens, fmt.Errorf("%s, %w", op, ErrInvalidCredentials)
 		}
 
 		a.log.Error("failed to get user", sl.Err(err))
 
-		return "", fmt.Errorf("%s, %w", op, err)
+		return tokens, fmt.Errorf("%s, %w", op, err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
 		a.log.Info("invalid credentials", sl.Err(err))
 
-		return "", fmt.Errorf("%s, %w", op, ErrInvalidCredentials)
+		return tokens, fmt.Errorf("%s, %w", op, ErrInvalidCredentials)
 	}
 
-	token, err := jwt.NewToken(user, a.tokenTTL)
+	accessToken, err := jwt.NewAccessToken(user, a.accessTokenTTL)
 	if err != nil {
-		a.log.Error("failed to generate token", sl.Err(err))
+		a.log.Error("failed to generate access token", sl.Err(err))
 
-		return "", fmt.Errorf("%s, %w", op, err)
+		return tokens, fmt.Errorf("%s, %w", op, err)
 	}
 
-	return token, nil
+	refreshToken, err := jwt.NewRefreshToken()
+	if err != nil {
+		a.log.Error("failed to generate refresh token", sl.Err(err))
+
+		return tokens, fmt.Errorf("%s, %w", op, err)
+	}
+
+	err = a.tokenProvider.SaveRefreshToken(ctx, user.ID, refreshToken, a.refreshTokenTTL)
+	if err != nil {
+		a.log.Error("failed to save refresh token", sl.Err(err))
+
+		return tokens, fmt.Errorf("%s, %w", op, err)
+	}
+
+	tokens.AccessToken = accessToken
+	tokens.RefreshToken = refreshToken
+
+	return tokens, nil
 }
 
 func (a *Auth) IsAdmin(ctx context.Context, userId string) (bool, error) {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sso/internal/domain/models"
 	"sso/internal/storage"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -111,4 +112,34 @@ func (s *Storage) IsAdmin(ctx context.Context, userId uuid.UUID) (bool, error) {
 	}
 
 	return isAdmin, nil
+}
+
+func (s *Storage) SaveRefreshToken(ctx context.Context, userID uuid.UUID, refreshToken string, refreshTokenTTL time.Duration) error {
+	const op = "storage.postgres.SaveRefreshToken"
+
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	query := `SELECT id FROM public.users_sessions as us WHERE rf_users_id=$1`
+	var id uuid.UUID
+
+	err = tx.QueryRow(ctx, query, userID).Scan(&id)
+	if err != nil {
+		_ = tx.Rollback(ctx)
+
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	query = `UPDATE public.users_sessions SET refresh_token=$1, expires_at=$2 WHERE id=$3`
+
+	expTime := time.Now().Add(refreshTokenTTL)
+	_, err = tx.Exec(ctx, query, refreshToken, expTime, id)
+	if err != nil {
+		_ = tx.Rollback(ctx)
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return tx.Commit(ctx)
 }
