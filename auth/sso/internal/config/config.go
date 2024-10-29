@@ -9,12 +9,13 @@ import (
 )
 
 type Config struct {
-	Env            string        `yaml:"env" env-default:"local"`
-	GRPC           GRPCConfig    `yaml:"grpc"`
-	HTTP           HTTPConfig    `yaml:"http"`
-	MigrationsPath string        `yaml:"migrationPath"`
-	StoragePath    string        `yaml:"storagePath"`
-	TokenTTL       time.Duration `yaml:"token_ttl" env-default:"1h"`
+	Env             string        `yaml:"env" env-default:"local"`
+	GRPC            GRPCConfig    `yaml:"grpc"`
+	HTTP            HTTPConfig    `yaml:"http"`
+	MigrationsPath  string        `yaml:"migrationPath"`
+	StoragePath     string        `yaml:"storagePath"`
+	AccessTokenTTL  time.Duration `yaml:"access_token_ttl" env-default:"10min"`
+	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" env-default:"72h"`
 }
 
 type GRPCConfig struct {

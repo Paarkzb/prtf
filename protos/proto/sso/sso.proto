@@ -38,6 +38,13 @@ service Auth {
             body: "*"
         };
     }
+
+    rpc Refresh (RefreshRequest) returns (RefreshResponse) {
+        option (google.api.http) = {
+            post: "/v1/refresh"
+            body: "*"
+        };
+    }
 }
 
 // TODO: На будущее
@@ -62,7 +69,8 @@ message SignInRequest {
 }
 
 message SignInResponse {
-    string accessToken = 1; // Auth token of the logged user
+    string accessToken = 1;
+    string refreshToken = 2;
 }
 
 message IsAdminRequest {
@@ -80,4 +88,14 @@ message UserIdentityRequest {
 message UserIdentityResponse {
     bool auth = 1;
     string userID = 2;
+}
+
+message RefreshRequest{
+    string userID = 1;
+    string refreshToken = 2;
+}
+
+message RefreshResponse{
+    string accessToken = 1;
+    string refreshToken = 2;
 }

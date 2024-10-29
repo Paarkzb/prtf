@@ -23,7 +23,7 @@ func main() {
 
 	ctx := context.Background()
 
-	application := app.NewApp(ctx, log, cfg.GRPC.Port, cfg.HTTP.Port, cfg.StoragePath, cfg.TokenTTL)
+	application := app.NewApp(ctx, log, cfg.GRPC.Port, cfg.HTTP.Port, cfg.StoragePath, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 
 	go func() {
 		application.GRPCServer.MustRun()
