@@ -6,3 +6,5 @@ grpc:
   timeout: 10s
 http:
   port: 8084
+accessTokenTtl: 10m
+refreshTokenTtl: 72h
