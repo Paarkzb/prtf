@@ -1,33 +1,27 @@
 FROM golang:1.21.4-alpine  AS build-stage
  
-# Set destination for COPY
-WORKDIR /app
+COPY ./ /app/
+WORKDIR /app/
  
-# Download Go modules
-COPY go.mod go.sum ./
 RUN go mod download
-
-# Copy the source code.
-COPY ./ ./
- 
-# Build
-RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd
+RUN CGO_ENABLED=0 GOOS=linux go build -o ./server ./cmd
 
 # Run the tests in the container
 FROM build-stage AS run-test-stage
 RUN go test -v ./...
 
 # Deploy the application binary into a lean image
-FROM scratch AS build-release-stage
+FROM alpine:latest AS build-release-stage
 
-WORKDIR /app
+WORKDIR /app/
 
-COPY --from=build-stage /server /server
-# COPY configs/config.yaml configs/config.yaml 
+COPY --from=0 /app/server ./
+COPY --from=0 /app/configs/ configs/
+COPY --from=0 /app/.env ./
 
 # Bind TCP port
-EXPOSE 8086
+# EXPOSE 8086
 
 # Run
-ENTRYPOINT [ "/server" ]
+ENTRYPOINT [ "./server" ]
 
