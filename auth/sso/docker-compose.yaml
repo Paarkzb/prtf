@@ -12,7 +12,7 @@ services:
       - 8085:8085
       - 8084:8084
     volumes:
-      - prtf_auth_server_volume:/app
+      - prtf_auth_server_volume:/home/app
     env_file:
       - .env
     deploy:
