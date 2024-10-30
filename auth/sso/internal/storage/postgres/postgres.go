@@ -122,20 +122,31 @@ func (s *Storage) SaveRefreshToken(ctx context.Context, userID uuid.UUID, refres
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	query := `SELECT id FROM public.users_sessions as us WHERE rf_users_id=$1`
-	var id uuid.UUID
+	query := `INSERT INTO public.users_sessions(rf_users_id, refresh_token, expires_at) VALUES ($1, $2, $3) 
+	ON CONFLICT (rf_users_id) DO UPDATE SET refresh_token=$2, expires_at=$3 WHERE users_sessions.rf_users_id=$1`
 
-	err = tx.QueryRow(ctx, query, userID).Scan(&id)
+	expTime := time.Now().Add(refreshTokenTTL)
+	_, err = tx.Exec(ctx, query, userID, refreshToken, expTime)
 	if err != nil {
 		_ = tx.Rollback(ctx)
-
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	query = `UPDATE public.users_sessions SET refresh_token=$1, expires_at=$2 WHERE id=$3`
+	return tx.Commit(ctx)
+}
+
+func (s *Storage) UpdateRefreshToken(ctx context.Context, userID uuid.UUID, refreshToken string, refreshTokenTTL time.Duration) error {
+	const op = "storage.postgres.SaveRefreshToken"
+
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	query := `UPDATE public.users_sessions SET refresh_token=$1, expires_at=$2 WHERE rf_users_id=$3`
 
 	expTime := time.Now().Add(refreshTokenTTL)
-	_, err = tx.Exec(ctx, query, refreshToken, expTime, id)
+	_, err = tx.Exec(ctx, query, refreshToken, expTime, userID)
 	if err != nil {
 		_ = tx.Rollback(ctx)
 		return fmt.Errorf("%s: %w", op, err)

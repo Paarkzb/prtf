@@ -30,6 +30,7 @@ type UserProvider interface {
 
 type TokenProvider interface {
 	SaveRefreshToken(ctx context.Context, userId uuid.UUID, refreshToken string, refreshTokenTTL time.Duration) error
+	UpdateRefreshToken(ctx context.Context, userId uuid.UUID, refreshToken string, refreshTokenTTL time.Duration) error
 }
 
 type AppProvider interface {
