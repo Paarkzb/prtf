@@ -154,3 +154,39 @@ func (s *Storage) UpdateRefreshToken(ctx context.Context, userID uuid.UUID, refr
 
 	return tx.Commit(ctx)
 }
+
+func (s *Storage) GetRefreshToken(ctx context.Context, userID uuid.UUID) (string, error) {
+	const op = "storage.postgres.GetRefreshToken"
+
+	query := `SELECT refresh_token FROM public.users_sessions WHERE rf_users_id=$1`
+
+	var refreshToken string
+	err := s.db.QueryRow(ctx, query, userID).Scan(&refreshToken)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", fmt.Errorf("%s: %w", op, storage.ErrUserSessionNotFound)
+		}
+
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return refreshToken, nil
+}
+
+func (s *Storage) GetUserByUserID(ctx context.Context, userID uuid.UUID) (models.User, error) {
+	const op = "storage.postgres.GetUserByUserID"
+
+	var user models.User
+
+	query := `SELECT id, username, email, pass_hash FROM public.users WHERE id=$1`
+
+	err := s.db.QueryRow(ctx, query, userID).Scan(&user.ID, &user.Username, &user.Email, &user.PassHash)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+		return user, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
