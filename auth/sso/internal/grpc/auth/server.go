@@ -22,8 +22,9 @@ type serverAPI struct {
 type Auth interface {
 	SignIn(ctx context.Context, username string, password string) (tokens models.Tokens, err error)
 	SignUp(ctx context.Context, username string, email string, password string) (userID uuid.UUID, err error)
-	IsAdmin(ctx context.Context, userId string) (isAdmin bool, err error)
+	IsAdmin(ctx context.Context, userId uuid.UUID) (isAdmin bool, err error)
 	UserIdentity(ctx context.Context, accessToken string) (auth bool, userID uuid.UUID, err error)
+	Refresh(ctx context.Context, userID uuid.UUID, refreshToken string) (tokens models.Tokens, err error)
 }
 
 func Register(gRPCServer *grpc.Server, auth Auth) {
@@ -80,7 +81,12 @@ func (s *serverAPI) IsAdmin(ctx context.Context, in *ssov1.IsAdminRequest) (*sso
 		return nil, status.Error(codes.InvalidArgument, "userID is required")
 	}
 
-	isAdmin, err := s.auth.IsAdmin(ctx, in.UserID)
+	userID, err := uuid.Parse(in.UserID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "cannot parse userID")
+	}
+
+	isAdmin, err := s.auth.IsAdmin(ctx, userID)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
 			return nil, status.Error(codes.NotFound, "user not found")
@@ -103,4 +109,30 @@ func (s *serverAPI) UserIdentity(ctx context.Context, in *ssov1.UserIdentityRequ
 	}
 
 	return &ssov1.UserIdentityResponse{Auth: auth, UserID: userId.String()}, nil
+}
+
+func (s *serverAPI) Refresh(ctx context.Context, in *ssov1.RefreshRequest) (*ssov1.RefreshResponse, error) {
+	if in.UserID == "" {
+		return nil, status.Error(codes.InvalidArgument, "userID is required")
+	}
+
+	if in.RefreshToken == "" {
+		return nil, status.Error(codes.InvalidArgument, "refresh token is required")
+	}
+
+	userID, err := uuid.Parse(in.UserID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "cannot parse userID")
+	}
+
+	tokens, err := s.auth.Refresh(ctx, userID, in.RefreshToken)
+	if err != nil {
+		if errors.Is(err, authservice.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid userID or refresh token")
+		}
+
+		return nil, status.Error(codes.Internal, "failed to refresh token")
+	}
+
+	return &ssov1.RefreshResponse{AccessToken: tokens.AccessToken, RefreshToken: tokens.RefreshToken}, nil
 }

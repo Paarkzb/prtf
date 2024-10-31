@@ -25,12 +25,14 @@ type UserSaver interface {
 
 type UserProvider interface {
 	GetUserByUsername(ctx context.Context, username string) (models.User, error)
-	IsAdmin(ctx context.Context, userId uuid.UUID) (bool, error)
+	IsAdmin(ctx context.Context, userID uuid.UUID) (bool, error)
+	GetUserByUserID(ctx context.Context, userID uuid.UUID) (models.User, error)
 }
 
 type TokenProvider interface {
-	SaveRefreshToken(ctx context.Context, userId uuid.UUID, refreshToken string, refreshTokenTTL time.Duration) error
-	UpdateRefreshToken(ctx context.Context, userId uuid.UUID, refreshToken string, refreshTokenTTL time.Duration) error
+	SaveRefreshToken(ctx context.Context, userID uuid.UUID, refreshToken string, refreshTokenTTL time.Duration) error
+	UpdateRefreshToken(ctx context.Context, userID uuid.UUID, refreshToken string, refreshTokenTTL time.Duration) error
+	GetRefreshToken(ctx context.Context, userID uuid.UUID) (string, error)
 }
 
 type AppProvider interface {
@@ -121,25 +123,36 @@ func (a *Auth) SignIn(ctx context.Context, username string, password string) (mo
 		return tokens, fmt.Errorf("%s, %w", op, ErrInvalidCredentials)
 	}
 
-	accessToken, err := jwt.NewAccessToken(user, a.accessTokenTTL)
+	tokens, err = generateTokens(user, a.accessTokenTTL)
 	if err != nil {
-		a.log.Error("failed to generate access token", sl.Err(err))
+		a.log.Info("failed to generate tokens", sl.Err(err))
 
 		return tokens, fmt.Errorf("%s, %w", op, err)
+	}
+
+	err = a.tokenProvider.SaveRefreshToken(ctx, user.ID, tokens.RefreshToken, a.refreshTokenTTL)
+	if err != nil {
+		a.log.Info("failed to save refresh token", sl.Err(err))
+
+		return tokens, fmt.Errorf("%s, %w", op, err)
+	}
+
+	return tokens, nil
+}
+
+func generateTokens(user models.User, accessTokenTTL time.Duration) (models.Tokens, error) {
+	var tokens models.Tokens
+
+	accessToken, err := jwt.NewAccessToken(user, accessTokenTTL)
+	if err != nil {
+
+		return tokens, err
 	}
 
 	refreshToken, err := jwt.NewRefreshToken()
 	if err != nil {
-		a.log.Error("failed to generate refresh token", sl.Err(err))
 
-		return tokens, fmt.Errorf("%s, %w", op, err)
-	}
-
-	err = a.tokenProvider.SaveRefreshToken(ctx, user.ID, refreshToken, a.refreshTokenTTL)
-	if err != nil {
-		a.log.Error("failed to save refresh token", sl.Err(err))
-
-		return tokens, fmt.Errorf("%s, %w", op, err)
+		return tokens, err
 	}
 
 	tokens.AccessToken = accessToken
@@ -148,22 +161,17 @@ func (a *Auth) SignIn(ctx context.Context, username string, password string) (mo
 	return tokens, nil
 }
 
-func (a *Auth) IsAdmin(ctx context.Context, userId string) (bool, error) {
+func (a *Auth) IsAdmin(ctx context.Context, userID uuid.UUID) (bool, error) {
 	const op = "Auth.IsAdmin"
 
 	log := a.log.With(
 		slog.String("op", op),
-		slog.String("userId", userId),
+		slog.String("userID", userID.String()),
 	)
-
-	uid, err := uuid.Parse(userId)
-	if err != nil {
-		return false, fmt.Errorf("%s, %w", op, err)
-	}
 
 	log.Info("checking if user is admin")
 
-	isAdmin, err := a.userProvider.IsAdmin(ctx, uid)
+	isAdmin, err := a.userProvider.IsAdmin(ctx, userID)
 	if err != nil {
 		return false, fmt.Errorf("%s, %w", op, err)
 	}
@@ -174,7 +182,7 @@ func (a *Auth) IsAdmin(ctx context.Context, userId string) (bool, error) {
 }
 
 func (a *Auth) UserIdentity(ctx context.Context, accessToken string) (bool, uuid.UUID, error) {
-	const op = "Auth.UserIdentity"
+	const op = "Auth.userIdentity"
 
 	log := a.log.With(
 		slog.String("op", op),
@@ -193,4 +201,51 @@ func (a *Auth) UserIdentity(ctx context.Context, accessToken string) (bool, uuid
 	log.Info("user authenticated", slog.String("user_id", uid.String()))
 
 	return true, uid, nil
+}
+
+func (a *Auth) Refresh(ctx context.Context, userID uuid.UUID, refreshToken string) (models.Tokens, error) {
+	const op = "Auth.Refresh"
+	var tokens models.Tokens
+
+	log := a.log.With(
+		slog.String("op", op),
+	)
+
+	log.Info("refresh tokens")
+	dbRefreshToken, err := a.tokenProvider.GetRefreshToken(ctx, userID)
+	if err != nil {
+		a.log.Error("user session not found", sl.Err(err))
+
+		return tokens, fmt.Errorf("%s, %w", op, err)
+	}
+
+	if dbRefreshToken != refreshToken {
+		a.log.Error("invalid refresh token")
+
+		return tokens, fmt.Errorf("%s, %w", op, errors.New("invalid refresh token"))
+	}
+
+	user, err := a.userProvider.GetUserByUserID(ctx, userID)
+	if err != nil {
+		a.log.Error("user not found")
+
+		return tokens, fmt.Errorf("%s, %w", op, err)
+	}
+
+	tokens, err = generateTokens(user, a.accessTokenTTL)
+	if err != nil {
+		a.log.Info("failed to generate tokens", sl.Err(err))
+
+		return tokens, fmt.Errorf("%s, %w", op, err)
+	}
+
+	err = a.tokenProvider.SaveRefreshToken(ctx, user.ID, tokens.RefreshToken, a.refreshTokenTTL)
+	if err != nil {
+		a.log.Info("failed to save refresh token", sl.Err(err))
+
+		return tokens, fmt.Errorf("%s, %w", op, err)
+	}
+
+	return tokens, nil
+
 }
