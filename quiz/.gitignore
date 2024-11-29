@@ -3,5 +3,5 @@
 
 # /configs
 /dist
-database.yml
+# database.yml
 # .env
