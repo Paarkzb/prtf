@@ -2,30 +2,30 @@ package handler
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 const (
 	userCtx = "userId"
 )
 
-func (h *Handler) userIdentity(c *gin.Context) {
-	cookie, err := c.Cookie("token")
-	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, "token is empty")
-		return
-	}
+type userIdentityInput struct {
+	Auth   bool   `json:"auth" binding:"required"`
+	UserID string `json:"userID" binding:"required"`
+}
 
-	// parse token
-	userId, err := h.service.Authorization.ParseToken(cookie)
-	if err != nil {
+func (h *Handler) userIdentity(c *gin.Context) {
+	var input userIdentityInput
+
+	if err := c.BindJSON(&input); err != nil {
 		newErrorResponse(c, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	c.Set(userCtx, userId)
+	c.Set(userCtx, input.UserID)
 }
 
 func getUserId(c *gin.Context) (uuid.UUID, error) {
