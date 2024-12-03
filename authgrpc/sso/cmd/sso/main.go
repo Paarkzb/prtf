@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"sso/internal/app"
 	"sso/internal/config"
-	"sso/internal/repository/postgres"
 	"syscall"
 )
 
@@ -18,18 +17,17 @@ const (
 )
 
 func main() {
-	cfg := config.MustLoad(os.Getenv("CONFIG_PATH"))
+	cfg := config.MustLoad()
 
 	log := setupLogger(cfg.Env)
 
 	ctx := context.Background()
 
-	db, err := postgres.NewPostgresDB(ctx, cfg.DB)
-	if err != nil {
-		panic(err)
-	}
+	application := app.NewApp(ctx, log, cfg.GRPC.Port, cfg.HTTP.Port, cfg.StoragePath, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 
-	application := app.NewApp(ctx, log, cfg.HTTP.Port, db, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
+	go func() {
+		application.GRPCServer.MustRun()
+	}()
 
 	go func() {
 		application.HTTPServer.MustRun()
@@ -43,8 +41,7 @@ func main() {
 	<-stop
 
 	// initiate graceful shutdown
-	application.Stop(ctx)
-	db.Close()
+	application.GRPCServer.Stop()
 	log.Info("Gracefully stopped")
 }
 

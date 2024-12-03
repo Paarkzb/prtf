@@ -2,33 +2,35 @@ package app
 
 import (
 	"context"
-	"log/slog"
-	grpcapp "sso/internal/app/grpc"
-	httpgateway "sso/internal/app/http-gateway"
-	authservice "sso/internal/services/auth"
-	"sso/internal/storage/postgres"
+	"sso/internal/app/server"
+	"sso/internal/handler"
+	"sso/internal/repository"
+	"sso/internal/services/authservice"
 	"time"
+
+	"log/slog"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type App struct {
-	GRPCServer *grpcapp.App
-	HTTPServer *httpgateway.App
+	HTTPServer *server.App
 }
 
-func NewApp(ctx context.Context, log *slog.Logger, grpcPort int, httpPort int, storagePath string, accessTokenTTL time.Duration, refreshTokenTTL time.Duration) *App {
-	storage, err := postgres.NewStorage(ctx, storagePath)
-	if err != nil {
-		panic(err)
-	}
+func NewApp(ctx context.Context, log *slog.Logger, port int, db *pgxpool.Pool, accessTokenTTL time.Duration, refreshTokenTTL time.Duration) *App {
 
-	authService := authservice.NewAuth(log, storage, storage, storage, storage, accessTokenTTL, refreshTokenTTL)
+	authRepo := repository.NewRepository(db)
+	songService := authservice.NewAuthService(log, authRepo, authRepo, authRepo, authRepo, accessTokenTTL, refreshTokenTTL)
+	handlers := handler.NewHandler(log, songService)
 
-	grpcApp := grpcapp.NewApp(log, authService, grpcPort)
-
-	httpApp := httpgateway.NewApp(log, httpPort)
+	httpServer := server.NewApp(log, handlers.InitRoutes(), port)
 
 	return &App{
-		GRPCServer: grpcApp,
-		HTTPServer: httpApp,
+		HTTPServer: httpServer,
 	}
+}
+
+func (a *App) Stop(ctx context.Context) error {
+
+	return a.HTTPServer.Stop(ctx)
 }
