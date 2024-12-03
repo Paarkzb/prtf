@@ -24,7 +24,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	mux := gin.Default()
 
 	mux.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:8080"},
+		AllowOrigins:     []string{"http://localhost:80"},
 		AllowMethods:     []string{"PUT", "PATCH", "GET", "POST", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type", "Accept", "Accept-Encoding", "User-Agent", "Cache-Control", "Pragma", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -32,8 +32,11 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		MaxAge:           300,
 	}))
 
-	mux.GET("/", h.getAllSongs)
-	mux.POST("/", h.saveSong)
+	mux.POST("/v1/sign-up", h.signUp)
+	mux.POST("/v1/sign-in", h.signIn)
+	mux.POST("/v1/is-admin", h.isAdmin)
+	mux.POST("/v1/user-identity", h.userIdentity)
+	mux.POST("/v1/refresh", h.refresh)
 
 	return mux
 }
