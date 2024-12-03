@@ -1,9 +1,12 @@
 env: "local"
 migrationPath: "migrations"
-storagePath: "postgres://postgres:postgres@prtf_auth_postgres:5432/postgres"
-grpc:
-  port: 8085
-  timeout: 10h
+db:
+  host: "prtf_auth_postgres"
+  port: "5432"
+  username: "postgres"
+  password: "postgres"
+  dbname: "postgres"
+  sslmode: "disable"
 http:
   port: 8084
 accessTokenTtl: 10m
