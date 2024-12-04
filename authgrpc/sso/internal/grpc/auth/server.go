@@ -76,7 +76,7 @@ func (s *serverAPI) SignUp(ctx context.Context, in *ssov1.SignUpRequest) (resp *
 	return &ssov1.SignUpResponse{UserID: uid.String()}, nil
 }
 
-func (s *serverAPI) IsAdmin(ctx context.Context, in *ssov1.IsAdminRequest) (*ssov1.IsAdminResponse, error) {
+func (s *serverAPI) IsAdminw(ctx context.Context, in *ssov1.IsAdminRequest) (*ssov1.IsAdminResponse, error) {
 	if in.UserID == "" {
 		return nil, status.Error(codes.InvalidArgument, "userID is required")
 	}

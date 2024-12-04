@@ -249,3 +249,22 @@ func (a *AuthService) Refresh(ctx context.Context, userID uuid.UUID, refreshToke
 	return tokens, nil
 
 }
+
+func (a *AuthService) GetUserByUserID(ctx context.Context, userID uuid.UUID) (models.User, error) {
+	const op = "AuthService.GetUserByUserID"
+
+	log := a.log.With(
+		slog.String("op", op),
+	)
+
+	log.Info("get user by userID")
+
+	user, err := a.userProvider.GetUserByUserID(ctx, userID)
+	if err != nil {
+		return user, fmt.Errorf("%s, %w", op, err)
+	}
+
+	log.Info("user found", slog.String("user_id", user.ID.String()))
+
+	return user, nil
+}
