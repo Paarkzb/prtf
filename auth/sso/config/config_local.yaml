@@ -9,5 +9,6 @@ db:
   sslmode: "disable"
 http:
   port: 8084
+  timeout: 5s
 accessTokenTtl: 10m
 refreshTokenTtl: 72h

@@ -1,16 +1,11 @@
 package suite
 
 import (
-	"context"
-	"net"
+	"net/http"
 	"os"
 	"sso/internal/config"
-	ssov1 "sso/protos/gen/go/sso"
-	"strconv"
 	"testing"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"time"
 )
 
 const (
@@ -20,33 +15,34 @@ const (
 type Suite struct {
 	*testing.T
 	Cfg        *config.Config
-	AuthClient ssov1.AuthClient
+	AuthClient http.Client
 }
 
-func NewSuite(t *testing.T) (context.Context, *Suite) {
+func NewSuite(t *testing.T) *Suite {
 	t.Helper()
 	t.Parallel()
 
-	cfg := config.MustLoadPath(configPath())
+	cfg := config.MustLoad(configPath())
 
-	ctx, cancelCtx := context.WithTimeout(context.Background(), cfg.GRPC.Timeout)
+	// ctx, cancelCtx := context.WithTimeout(context.Background(), cfg.HTTP.Timeout)
 
 	t.Cleanup(func() {
 		t.Helper()
-		cancelCtx()
+		// cancelCtx()
 	})
 
-	cc, err := grpc.NewClient(grpcAddress(cfg), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Fatalf("grpc server connection failed: %v", err)
+	cc := http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:       10,
+			IdleConnTimeout:    30 * time.Second,
+			DisableCompression: true,
+		},
 	}
 
-	authClient := ssov1.NewAuthClient(cc)
-
-	return ctx, &Suite{
+	return &Suite{
 		T:          t,
 		Cfg:        cfg,
-		AuthClient: authClient,
+		AuthClient: cc,
 	}
 }
 
@@ -58,8 +54,4 @@ func configPath() string {
 	}
 
 	return "../config/config_local.yaml"
-}
-
-func grpcAddress(cfg *config.Config) string {
-	return net.JoinHostPort(grpcHost, strconv.Itoa(cfg.GRPC.Port))
 }
