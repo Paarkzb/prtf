@@ -17,7 +17,8 @@ type Config struct {
 }
 
 type HTTPConfig struct {
-	Port int `yaml:"port"`
+	Port    int           `yaml:"port"`
+	Timeout time.Duration `yaml:"timeout"`
 }
 
 type DBConfig struct {
