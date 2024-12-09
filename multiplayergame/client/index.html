@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tankio</title>
+
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+            body, html {
+                height: 100%;
+            }
+            .form {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100%;
+            }
+
+            .login-btn {
+                text-align: center;
+                margin-top: 10px;
+            }
+
+            .game {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="form" class="form">
+            <div>
+                <form id="login-form">
+                    <div>
+                        <label for="username">username:</label>
+                        <input type="text" id="username" name="username" />
+                    </div>
+                    <div class="login-btn">
+                        <input type="button" value="login" id="login-btn" />
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="game">
+            <canvas id="game-canvas"></canvas>
+        </div>
+        <script type="module" src="src/index.js"></script>
+    </body>
+</html>
