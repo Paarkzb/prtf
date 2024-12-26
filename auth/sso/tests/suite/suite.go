@@ -6,6 +6,8 @@ import (
 	"sso/internal/config"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -16,6 +18,7 @@ type Suite struct {
 	*testing.T
 	Cfg        *config.Config
 	AuthClient http.Client
+	Router     *gin.Engine
 }
 
 func NewSuite(t *testing.T) *Suite {

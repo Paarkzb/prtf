@@ -27,7 +27,7 @@ func (h *Handler) signUp(c *gin.Context) {
 			return
 		}
 
-		h.newErrorResponse(c, http.StatusBadRequest, errors.New("failed to login"))
+		h.newErrorResponse(c, http.StatusBadRequest, errors.New("failed to sign-up"))
 		return
 	}
 

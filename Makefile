@@ -9,3 +9,6 @@ deploy:
 migrate:
 	goose -dir ./auth/sso/migrations postgres "host=localhost port=5435 user=postgres password=postgres dbname=postgres sslmode=disable" up
 	cd quiz && soda migrate up && cd ..
+
+run:
+	docker-compose up -d --build
