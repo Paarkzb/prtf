@@ -35,7 +35,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	mux.POST("/v1/sign-up", h.signUp)
 	mux.POST("/v1/sign-in", h.signIn)
 	mux.POST("/v1/is-admin", h.isAdmin)
-	mux.POST("/v1/user-identity", h.userIdentity)
+	mux.GET("/v1/user-identity", h.userIdentity)
 	mux.POST("/v1/refresh", h.refresh)
 
 	return mux
