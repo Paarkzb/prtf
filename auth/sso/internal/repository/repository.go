@@ -174,9 +174,9 @@ func (s *Repository) GetUserByUserID(ctx context.Context, userID uuid.UUID) (mod
 
 	var user models.User
 
-	query := `SELECT id, username, email, pass_hash FROM public.users WHERE id=$1`
+	query := `SELECT id, username, email FROM public.users WHERE id=$1`
 
-	err := s.db.QueryRow(ctx, query, userID).Scan(&user.ID, &user.Username, &user.Email, &user.PassHash)
+	err := s.db.QueryRow(ctx, query, userID).Scan(&user.ID, &user.Username, &user.Email)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return user, fmt.Errorf("%s: %w", op, ErrUserNotFound)
