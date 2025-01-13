@@ -19,6 +19,14 @@ func (h *Handler) signUp(c *gin.Context) {
 		h.newErrorResponse(c, http.StatusBadRequest, err)
 		return
 	}
+	if input.Username == "" {
+		h.newErrorResponse(c, http.StatusBadRequest, errors.New("username is required"))
+		return
+	}
+	if input.Password == "" {
+		h.newErrorResponse(c, http.StatusBadRequest, errors.New("password is required"))
+		return
+	}
 
 	id, err := h.authService.SignUp(c, input.Username, input.Email, input.Password)
 	if err != nil {
@@ -27,7 +35,7 @@ func (h *Handler) signUp(c *gin.Context) {
 			return
 		}
 
-		h.newErrorResponse(c, http.StatusBadRequest, errors.New("failed to sign-up"))
+		h.newErrorResponse(c, http.StatusBadRequest, errors.New("failed to register user"))
 		return
 	}
 
@@ -134,7 +142,15 @@ func (h *Handler) refresh(c *gin.Context) {
 	var input refreshInput
 
 	if err := c.BindJSON(&input); err != nil {
+		if uuid.IsInvalidLengthError(err) {
+			h.newErrorResponse(c, http.StatusBadRequest, errors.New("userID is required"))
+			return
+		}
 		h.newErrorResponse(c, http.StatusBadRequest, err)
+		return
+	}
+	if input.RefreshToken == "" {
+		h.newErrorResponse(c, http.StatusBadRequest, errors.New("refresh token is required"))
 		return
 	}
 

@@ -11,7 +11,7 @@ type User struct {
 
 type UserInput struct {
 	ID       uuid.UUID `json:"id,omitempty"`
-	Email    string    `json:"email",omitempty`
-	Username string    `json:"username" binding:"required"`
-	Password string    `json:"password,omitempty" binding:"required"`
+	Email    string    `json:"email,omitempty"`
+	Username string    `json:"username,omitempty"`
+	Password string    `json:"password,omitempty"`
 }

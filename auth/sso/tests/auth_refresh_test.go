@@ -42,22 +42,24 @@ func TestRefresh_HappyPath(t *testing.T) {
 	respLogin, err := st.AuthClient.Post(fmt.Sprintf("%s:%d/v1/sign-in", "http://localhost", st.Cfg.HTTP.Port), "application/json", r)
 	require.NoError(t, err)
 
+	loginBody, err := io.ReadAll(respLogin.Body)
+	require.NoError(t, err)
+	var loginData map[string]map[string]string
+	err = json.Unmarshal(loginBody, &loginData)
+	require.NoError(t, err)
+
 	input := map[string]string{
-		"userID":       username,
-		"refreshToken": pass,
+		"userID":       loginData["user"]["id"],
+		"refreshToken": loginData["tokens"]["refresh_token"],
 	}
 	data, err = json.Marshal(input)
 	require.NoError(t, err)
 	r = bytes.NewReader(data)
-	respRefresh, err := st.AuthClient.Post(fmt.Sprintf("%s:%d/refresh", "http://localhost", st.Cfg.HTTP.Port), "application/json", r)
-	require.NoError(t, err)
-
-	loginBody, err := io.ReadAll(respLogin.Body)
-	var loginData map[string]map[string]interface{}
-	err = json.Unmarshal(loginBody, &loginData)
+	respRefresh, err := st.AuthClient.Post(fmt.Sprintf("%s:%d/v1/refresh", "http://localhost", st.Cfg.HTTP.Port), "application/json", r)
 	require.NoError(t, err)
 
 	refreshBody, err := io.ReadAll(respRefresh.Body)
+	require.NoError(t, err)
 	var refreshData map[string]interface{}
 	err = json.Unmarshal(refreshBody, &refreshData)
 	require.NoError(t, err)
@@ -95,11 +97,13 @@ func TestRefresh_FailCases(t *testing.T) {
 	require.NoError(t, err)
 
 	regBody, err := io.ReadAll(respReg.Body)
+	require.NoError(t, err)
 	var regData map[string]string
 	err = json.Unmarshal(regBody, &regData)
 	require.NoError(t, err)
 
 	loginBody, err := io.ReadAll(respLogin.Body)
+	require.NoError(t, err)
 	var loginData map[string]map[string]string
 	err = json.Unmarshal(loginBody, &loginData)
 	require.NoError(t, err)
@@ -118,7 +122,7 @@ func TestRefresh_FailCases(t *testing.T) {
 		},
 		{
 			name:         "Refresh with empty refreshToken",
-			userID:       regData["userId"],
+			userID:       regData["userID"],
 			refreshToken: "",
 			expectedErr:  "refresh token is required",
 		},
@@ -155,13 +159,14 @@ func TestRefresh_FailCases(t *testing.T) {
 			require.NoError(t, err)
 
 			refreshBody, err := io.ReadAll(refreshReg.Body)
+			require.NoError(t, err)
 			var refreshData map[string]string
 			err = json.Unmarshal(refreshBody, &refreshData)
 			require.NoError(t, err)
 
 			assert.Empty(t, refreshData["accessToken"], refreshData["refreshToken"])
 
-			require.Contains(t, err.Error(), tt.expectedErr)
+			require.Contains(t, refreshData["message"], tt.expectedErr)
 		})
 	}
 }

@@ -15,6 +15,6 @@ type statusResponse struct {
 }
 
 func (h *Handler) newErrorResponse(c *gin.Context, statusCode int, err error) {
-	h.log.Error("failed to generate password hash", sl.Err(err))
+	h.log.Error("Error", sl.Err(err))
 	c.AbortWithStatusJSON(statusCode, errorResponse{Message: err.Error()})
 }
