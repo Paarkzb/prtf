@@ -7,6 +7,7 @@ import (
 	"sso/internal/lib/jwt"
 	"sso/internal/repository"
 	"sso/internal/services/authservice"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -109,19 +110,22 @@ func (h *Handler) isAdmin(c *gin.Context) {
 	})
 }
 
-type userIdentityInput struct {
-	AccessToken string `json:"accessToken"`
-}
-
 func (h *Handler) userIdentity(c *gin.Context) {
-	var input userIdentityInput
+	header := strings.Split(c.Request.Header["Authorization"][0], " ")
 
-	if err := c.BindJSON(&input); err != nil {
-		h.newErrorResponse(c, http.StatusBadRequest, err)
+	if len(header) < 2 {
+		h.newErrorResponse(c, http.StatusBadRequest, errors.New("header is empty"))
 		return
 	}
 
-	auth, userID, err := h.authService.UserIdentity(c, input.AccessToken)
+	token := header[1]
+
+	if token == "" {
+		h.newErrorResponse(c, http.StatusBadRequest, errors.New("token is empty"))
+		return
+	}
+
+	auth, userID, err := h.authService.UserIdentity(c, token)
 	if err != nil {
 		h.newErrorResponse(c, http.StatusInternalServerError, errors.New("authentication failed"))
 		return

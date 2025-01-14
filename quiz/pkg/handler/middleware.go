@@ -13,8 +13,8 @@ const (
 )
 
 type userIdentityInput struct {
-	Auth   bool   `json:"auth" binding:"required"`
-	UserID string `json:"userID" binding:"required"`
+	Auth   bool      `json:"auth" binding:"required"`
+	UserID uuid.UUID `json:"userID" binding:"required"`
 }
 
 func (h *Handler) userIdentity(c *gin.Context) {
