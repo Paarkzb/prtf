@@ -10,5 +10,5 @@ db:
 http:
   port: 8084
   timeout: 5s
-accessTokenTtl: 10m
+accessTokenTtl: 24h
 refreshTokenTtl: 72h

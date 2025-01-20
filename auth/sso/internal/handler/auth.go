@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"sso/internal/domain/models"
@@ -130,6 +131,16 @@ func (h *Handler) userIdentity(c *gin.Context) {
 		h.newErrorResponse(c, http.StatusInternalServerError, errors.New("authentication failed"))
 		return
 	}
+
+	info, err := json.Marshal(map[string]interface{}{
+		"auth":   auth,
+		"userID": userID,
+	})
+	if err != nil {
+		h.newErrorResponse(c, http.StatusInternalServerError, errors.New("authentication failed"))
+		return
+	}
+	h.log.Info(string(info))
 
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"auth":   auth,

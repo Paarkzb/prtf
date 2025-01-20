@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -40,6 +41,8 @@ func getUserId(c *gin.Context) (uuid.UUID, error) {
 		newErrorResponse(c, http.StatusInternalServerError, "user id is of invalid type")
 		return uuid.Nil, errors.New("user id is of invalid type")
 	}
+
+	logrus.Infof("valid auth. userID: %s", idUUID)
 
 	return idUUID, nil
 }
