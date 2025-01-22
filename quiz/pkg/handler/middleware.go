@@ -3,6 +3,8 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"prtf/internal/lib/jwt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -13,20 +15,30 @@ const (
 	userCtx = "userId"
 )
 
-type userIdentityInput struct {
-	Auth   bool      `json:"auth" binding:"required"`
-	UserID uuid.UUID `json:"userID" binding:"required"`
-}
-
 func (h *Handler) userIdentity(c *gin.Context) {
-	var input userIdentityInput
+	header := strings.Split(c.Request.Header["Authorization"][0], " ")
 
-	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
+	if len(header) < 2 {
+		newErrorResponse(c, http.StatusBadRequest, "header is empty")
 		return
 	}
 
-	c.Set(userCtx, input.UserID)
+	token := header[1]
+
+	if token == "" {
+		newErrorResponse(c, http.StatusBadRequest, "token is empty")
+		return
+	}
+
+	claims, err := jwt.ParseToken(token)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	logrus.Infof("userIdentity. claims: %v", claims)
+
+	c.Set(userCtx, claims["uid"])
 }
 
 func getUserId(c *gin.Context) (uuid.UUID, error) {
@@ -36,9 +48,11 @@ func getUserId(c *gin.Context) (uuid.UUID, error) {
 		return uuid.Nil, errors.New("user id not found")
 	}
 
-	idUUID, ok := id.(uuid.UUID)
-	if !ok {
-		newErrorResponse(c, http.StatusInternalServerError, "user id is of invalid type")
+	logrus.Infof("getUserId. id: %s", id)
+
+	idUUID, err := uuid.Parse(id.(string))
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return uuid.Nil, errors.New("user id is of invalid type")
 	}
 
