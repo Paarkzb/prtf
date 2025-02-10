@@ -1,0 +1,7 @@
+[tls.options]
+    [tls.options.default]
+        sniStrict = true
+
+[[tls.certificates]]
+    certFile = "/etc/certs/local.pem"
+    keyFile = "/etc/certs/local.key"
