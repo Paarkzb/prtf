@@ -1,0 +1,32 @@
+api:
+  dashboard: true
+  insecure: true
+log:
+  level: DEBUG # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: common # common, json, logfmt
+  filePath: /var/log/traefik/traefik.log
+accesslog:
+  format: common # common, json, logfmt
+  filePath: /var/log/traefik/access.log
+entryPoints:
+  web:
+    address: ":8090"
+  websecure:
+    address: ":8943"
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: paarkovpaark@gmail.com
+      storage: /etc/traefik/acme.json
+      httpChallenge:
+        entryPoint: web
+
+file:
+  directory: /etc/traefik/dynamic
+  watch: true
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: prtf-stream-net

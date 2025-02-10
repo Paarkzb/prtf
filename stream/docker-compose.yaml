@@ -1,0 +1,114 @@
+services:
+  prtf-stream-traefik:
+    image: traefik:v2.6
+    ports:
+      - "8090:8090"
+      - "8943:8943"
+      - "8098:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml
+      - ./traefik/dynamic:/etc/traefik/dynamic
+      - ./traefik/certs:/etc/certs
+    networks:
+      - prtf-stream-net
+  prtf-stream-nginx:
+    build:
+      context: ./nginx
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stream-nginx.rule=Host(`nginx.prtf-stream.localhost`)
+      - traefik.http.routers.stream-nginx.entrypoints=web
+    ports:
+      - 8091:80
+      - 1935:1935
+    volumes:
+      - prtf-streams:/var/www/hls
+      - prtf-recordings:/var/rec
+      - prtf-vod:/var/vod
+    networks:
+      - prtf-stream-net
+    deploy:
+      restart_policy:
+        condition: on-failure
+  prtf-stream-client:
+    image: nginx:alpine
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.nginx.rule=Host(`prtf-stream.localhost`)
+      - traefik.http.routers.nginx.entrypoints=web
+    ports:
+      - 3000:80
+    volumes:
+      - ./client/public:/usr/share/nginx/html
+    depends_on:
+      - prtf-stream-server
+    networks:
+      - prtf-stream-net
+    deploy:
+      restart_policy:
+        condition: on-failure
+  prtf-stream-server:
+    build: ./go-server
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stream-server.rule=(Host(`prtf-stream.localhost`) && PathPrefix(`/api`))
+      - traefik.http.routers.stream-server.entrypoints=web
+    ports:
+      - 8092:8092
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=stream
+      - DB_PASSWORD=secret
+      - DB_NAME=streams
+    depends_on:
+      - prtf-stream-postgres
+    volumes:
+      - prtf-vod:/var/vod
+    networks:
+      - prtf-stream-net
+    deploy:
+      restart_policy:
+        condition: on-failure
+  prtf-stream-chat-server:
+    build: ./chat-server
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stream-chat-server.rule=Host(`chat.prtf-stream.localhost`)
+      - traefik.http.routers.stream-chat-server.entrypoints=web
+    ports:
+      - 8093:8093
+    networks:
+      - prtf-stream-net
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@prtf_stream_postgres:5432/postgres?sslmode=disable
+    deploy:
+      restart_policy:
+        condition: on-failure
+  prtf-stream-postgres:
+    image: postgres:17.2-alpine
+    hostname: prtf_stream_postgres
+    ports:
+      - 5490:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - prtf-stream-postgres-data:/var/lib/postgresql/data
+      # - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - prtf-stream-net
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  prtf-streams:
+  prtf-recordings:
+  prtf-vod:
+  prtf-stream-postgres-data:
+
+networks:
+  prtf-stream-net:
+    driver: bridge
