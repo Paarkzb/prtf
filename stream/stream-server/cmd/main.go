@@ -1,13 +1,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 )
 
 type StreamKey struct {
@@ -80,7 +86,16 @@ func isValidStreamKey(key string) bool {
 }
 
 func listStreamsHandler(w http.ResponseWriter, r *http.Request) {
+
+	cached, err := rdb.Get(context.Background(), "streams").Bytes()
+	if err == nil {
+		w.Write(cached)
+		return
+	}
+
 	mu.Lock()
+	rdb.Set(context.Background(), "streams", activeStreams, 10*time.Second)
+
 	defer mu.Unlock()
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(activeStreams)
@@ -91,7 +106,58 @@ func pong(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("pong")
 }
 
+var rdb = redis.NewClient(&redis.Options{
+	Addr:     "prtf-stream-redis:6379",
+	Password: "redis",
+	DB:       0,
+})
+
+func recordMetrics() {
+	go func() {
+		for {
+			promActiveStreams.Add(float64(len(activeStreams)))
+
+			time.Sleep(2 * time.Second)
+		}
+	}()
+}
+
+var (
+	promStreamRequests = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "stream_requests_total",
+			Help: "Total number of stream requests",
+		},
+	)
+	promActiveStreams = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "active_streams",
+			Help: "Current active streams",
+		},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(promStreamRequests, promActiveStreams)
+}
+
 func main() {
+	recordMetrics()
+
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+	sugar := logger.Sugar()
+
+	err = rdb.Ping(context.Background()).Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	http.Handle("/metrics", promhttp.Handler())
+
 	http.HandleFunc("/api/auth/stream", authStreamHandler)
 	http.HandleFunc("/api/streams", listStreamsHandler)
 	http.HandleFunc("/", pong)
@@ -99,6 +165,6 @@ func main() {
 	http.HandleFunc("/api/recordings", listRecordingsHandler)
 	http.Handle("/vod/", http.StripPrefix("/vod/", http.FileServer(http.Dir("/var/vod"))))
 
-	fmt.Println("Server running on :8092")
-	log.Fatal(http.ListenAndServe(":8092", nil))
+	sugar.Infow("Server running on :8092")
+	sugar.Fatal(http.ListenAndServe(":8092", nil))
 }

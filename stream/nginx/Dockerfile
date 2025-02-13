@@ -25,6 +25,7 @@ RUN cd /tmp/${NGINX_VERSION} && \
         --pid-path=/var/run/nginx.pid \
         --with-http_ssl_module \
         --with-http_v2_module \
+        --with-http_stub_status_module \
         --add-dynamic-module=/tmp/nginx-http-flv-module-${NGINX_HTTP_FLV_MODULE_VERSION} \
         --with-debug && \
     make && \

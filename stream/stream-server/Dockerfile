@@ -3,7 +3,7 @@ FROM golang:1.22.5-alpine  AS build-stage
 
 WORKDIR /app/
 
-COPY go.mod  /app/
+COPY go.mod go.sum /app/
 RUN go mod download
 
 COPY ./ /app/

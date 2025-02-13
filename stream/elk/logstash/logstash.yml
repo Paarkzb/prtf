@@ -1,0 +1,13 @@
+api:
+  http:
+    host: "0.0.0.0"
+
+xpack:
+  monitoring:
+    enabled: true
+    elasticsearch:
+      hosts: ["http://prtf-elasticsearch:9200"]
+      username: "logstash_system"
+      password: "logstashpassword"
+      # ssl:
+      # verification_mode: none
