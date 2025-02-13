@@ -40,8 +40,12 @@
     </div>
 
     <script>
+      const chatServer = "prtf-stream.localhost:8090/chat";
+      const streamServer = "prtf-stream.localhost:8090/stream";
+      const apiServer = "prtf-stream.localhost:8090/api";
+
       // Чат
-      const ws = new WebSocket("ws://chat.prtf-stream.localhost:8090/ws");
+      const ws = new WebSocket("ws://" + chatServer + "ws");
       const chatMessage = document.getElementById("chatMessages");
       const chatInput = document.getElementById("chatInput");
 
@@ -77,7 +81,7 @@
 
       // Стрим
 
-      fetch("http://prtf-stream.localhost:8090/api/recordings")
+      fetch("http://" + apiServer + "/recordings")
         .then((res) => res.json())
         .then((recordings) => {
           const container = document.getElementById("recordings");
@@ -95,14 +99,14 @@
 
       function playRecording(path) {
         const video = document.getElementById("videoPlayer");
-        const recordingUrl = `http://nginx.prtf-stream.localhost:8090/vod/${path}`;
+        const recordingUrl = `http://${streamServer}/vod/${path}`;
         video.src = recordingUrl;
         video.load();
         video.play();
       }
 
       // Получить список активных стримов
-      fetch("http://prtf-stream.localhost:8090/api/streams")
+      fetch("http://" + apiServer + "/streams")
         .then((res) => res.json())
         .then((streams) => {
           const container = document.getElementById("streams");
@@ -116,7 +120,7 @@
       // Воспроизведение HLS
       function playStream(streamKey) {
         const video = document.getElementById("video");
-        const masterPlaylistUrl = `http://nginx.prtf-stream.localhost:8090/hls/${streamKey}.m3u8`;
+        const masterPlaylistUrl = `http://${streamServer}/hls/${streamKey}.m3u8`;
 
         if (Hls.isSupported()) {
           const hls = new Hls({

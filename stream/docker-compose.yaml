@@ -15,10 +15,13 @@ services:
   prtf-stream-nginx:
     build:
       context: ./nginx
+    hostname: prtf-stream-nginx
     labels:
       - traefik.enable=true
-      - traefik.http.routers.stream-nginx.rule=Host(`nginx.prtf-stream.localhost`)
+      - traefik.http.routers.stream-nginx.rule=Host(`prtf-stream.localhost`) && PathPrefix(`/stream`)
       - traefik.http.routers.stream-nginx.entrypoints=web
+      - traefik.http.middlewares.stream-nginx-strip.stripprefix.prefixes=/stream
+      - traefik.http.routers.stream-nginx.middlewares=stream-nginx-strip
     ports:
       - 8091:80
       - 1935:1935
@@ -28,17 +31,23 @@ services:
       - prtf-vod:/var/vod
     networks:
       - prtf-stream-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     deploy:
       restart_policy:
         condition: on-failure
   prtf-stream-client:
     image: nginx:alpine
+    hostname: prtf-stream-client
     labels:
       - traefik.enable=true
       - traefik.http.routers.nginx.rule=Host(`prtf-stream.localhost`)
       - traefik.http.routers.nginx.entrypoints=web
     ports:
-      - 3000:80
+      - 3000:808
     volumes:
       - ./client/public:/usr/share/nginx/html
     depends_on:
@@ -49,7 +58,8 @@ services:
       restart_policy:
         condition: on-failure
   prtf-stream-server:
-    build: ./go-server
+    build: ./stream-server
+    hostname: prtf-stream-server
     labels:
       - traefik.enable=true
       - traefik.http.routers.stream-server.rule=(Host(`prtf-stream.localhost`) && PathPrefix(`/api`))
@@ -74,20 +84,24 @@ services:
     build: ./chat-server
     labels:
       - traefik.enable=true
-      - traefik.http.routers.stream-chat-server.rule=Host(`chat.prtf-stream.localhost`)
+      - traefik.http.routers.stream-chat-server.rule=Host(`prtf-stream.localhost`) && PathPrefix(`/chat`)
       - traefik.http.routers.stream-chat-server.entrypoints=web
+      - traefik.http.middlewares.stream-chat-strip.stripprefix.prefixes=/chat
+      - traefik.http.routers.stream-chat-server.middlewares=stream-chat-strip
     ports:
       - 8093:8093
     networks:
       - prtf-stream-net
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@prtf_stream_postgres:5432/postgres?sslmode=disable
+      - DATABASE_URL=postgres://postgres:postgres@prtf-stream-postgres:5432/postgres?sslmode=disable
+    depends_on:
+      - prtf-stream-postgres
     deploy:
       restart_policy:
         condition: on-failure
   prtf-stream-postgres:
     image: postgres:17.2-alpine
-    hostname: prtf_stream_postgres
+    hostname: prtf-stream-postgres
     ports:
       - 5490:5432
     environment:
@@ -102,12 +116,141 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
+  prtf-stream-redis:
+    image: redis:7-alpine
+    hostname: prtf-stream-redis
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - 6390:6379
+    environment:
+      - REDIS_USER=redis
+      - REDIS_PASSWORD=redis
+      - REDIS_USER_PASSWORD=redis
+    volumes:
+      - prtf-stream-redis-data:/data
+    restart: unless-stopped
+    networks:
+      - prtf-stream-net
+
+  prtf-elasticsearch:
+    image: elasticsearch:8.16.3
+    hostname: prtf-elasticsearch
+    ports:
+      - 9290:9200
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512M -Xmx512M
+      - ELASTIC_USERNAME=elastic
+      - ELASTIC_PASSWORD=elastic
+    volumes:
+      - prtf-es-data:/usr/share/elasticsearch/data
+      - ./elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    restart: unless-stopped
+    networks:
+      - prtf-stream-net
+  prtf-logstash:
+    image: logstash:8.16.3
+    hostname: prtf-logstash
+    ports:
+      - 5090:5044
+    environment:
+      - LS_JAVA_OPTS=-Xmx512M -Xms512M
+    volumes:
+      - ./elk/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    restart: unless-stopped
+    depends_on:
+      - prtf-elasticsearch
+    networks:
+      - prtf-stream-net
+  prtf-kibana:
+    image: kibana:8.16.3
+    hostname: prtf-kibana
+    ports:
+      - 5690:5601
+    volumes:
+      - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      # - ./elk/kibana-node.options:/usr/share/kibana/config/node.options:ro
+    restart: unless-stopped
+    depends_on:
+      - prtf-elasticsearch
+    networks:
+      - prtf-stream-net
+  prtf-filebeat:
+    image: elastic/filebeat:8.16.3
+    command: filebeat -e -strict.perms=false
+    hostname: prtf-filebeat
+    user: root
+    volumes:
+      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - prtf-elasticsearch
+    networks:
+      - prtf-stream-net
+
+  prtf-prometheus:
+    image: prom/prometheus
+    hostname: prtf-prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 8990:9090
+    restart: unless-stopped
+    networks:
+      - prtf-stream-net
+  prtf-grafana:
+    image: grafana/grafana
+    ports:
+      - 8001:3000
+    volumes:
+      - prtf-grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - prtf-stream-net
+  prtf-cadvisor:
+    image: gcr.io/cadvisor/cadvisor
+    hostname: prtf-cadvisor
+    ports:
+      - 8099:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+    networks:
+      - prtf-stream-net
+  prtf-node-exporter:
+    image: prom/node-exporter
+    hostname: prtf-node-exporter
+    ports:
+      - 8100:9100
+    restart: unless-stopped
+    networks:
+      - prtf-stream-net
+  prtf-nginx-exporter:
+    image: nginx/nginx-prometheus-exporter
+    hostname: prtf-nginx-exporter
+    ports:
+      - 8013:9113
+    command:
+      - -nginx.scrape-uri=http://prtf-stream-nginx/nginx_status
+    depends_on:
+      - prtf-stream-nginx
+    restart: unless-stopped
+    networks:
+      - prtf-stream-net
 
 volumes:
   prtf-streams:
   prtf-recordings:
   prtf-vod:
   prtf-stream-postgres-data:
+  prtf-stream-redis-data:
+  prtf-grafana-data:
+  prtf-es-data:
 
 networks:
   prtf-stream-net:
