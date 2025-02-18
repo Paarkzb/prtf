@@ -2,15 +2,25 @@ import { defineStore } from 'pinia'
 import { ChatMessage } from '@/components/Chat/types'
 import { parse, stringify } from 'zipson'
 
-interface User {
-  id: string
-  name: string
-  username: string
+interface LoginResp {
+  tokens: {
+    access_token: string
+    refresh_token: string
+  }
+  user: {
+    id: string
+    name: string
+    username: string
+  }
 }
 
 export const useUserStore = defineStore('user', {
   state: () => ({
     isLogged: false,
+    tokens: {
+      access_token: '',
+      refresh_token: ''
+    },
     user: {
       id: '',
       name: '',
@@ -18,9 +28,10 @@ export const useUserStore = defineStore('user', {
     }
   }),
   actions: {
-    login(user: User) {
+    login(loginResp: LoginResp) {
       this.isLogged = true
-      this.user = user
+      this.tokens = loginResp.tokens
+      this.user = loginResp.user
     },
     logout() {
       this.isLogged = false

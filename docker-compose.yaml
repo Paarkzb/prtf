@@ -1,4 +1,320 @@
-include:
-  - gateway/docker-compose.yaml
-  - auth/sso/docker-compose.yaml
-  - quiz/docker-compose.yaml
+# include:
+#   - gateway/docker-compose.yaml
+#   - quiz/docker-compose.yaml
+
+services:
+  stream-traefik:
+    image: traefik:v2.6
+    ports:
+      - "8090:8090"
+      - "8943:8943"
+      - "8098:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml
+      - ./traefik/dynamic:/etc/traefik/dynamic
+      - ./traefik/certs:/etc/certs
+    networks:
+      - prtf-net
+
+  # web:
+  #   build:
+  #     context: ./client
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.http.routers.nginx.rule=Host(`prtf.localhost`)
+  #     - traefik.http.routers.nginx.entrypoints=web
+  #   container_name: web
+  #   hostname: prtf-web
+  #   ports:
+  #     - 8080:80
+  #   networks:
+  #     - prtf-net
+  #   deploy:
+  #     restart_policy:
+  #       condition: on-failure
+
+  auth-server:
+    depends_on:
+      - auth-postgres
+    build:
+      context: ./auth/sso
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.auth-server.rule=Host(`prtf.localhost`) && PathPrefix(`/auth`)
+      - traefik.http.routers.auth-server.entrypoints=web
+      - traefik.http.middlewares.auth-server-strip.stripprefix.prefixes=/auth
+      # - traefik.http.middlewares.auth-server-cors.headers.accesscontrolalloworiginlist=*
+      # - traefik.http.middlewares.auth-server-cors.headers.accesscontrolallowheaders=*
+      # - traefik.http.middlewares.auth-server-cors.headers.accesscontrolexposeheaders=*
+      # - traefik.http.middlewares.auth-server-cors.headers.accesscontrolallowmethods=*
+      # - traefik.http.middlewares.auth-server-cors.headers.accesscontrolallowcredentials=true
+      # - traefik.http.middlewares.auth-server-cors.headers.accesscontrolmaxage=100
+      # - traefik.http.middlewares.auth-server-cors.headers.addvaryheader=true
+      - traefik.http.routers.auth-server.middlewares=auth-server-strip
+    container_name: auth-server
+    hostname: prtf-auth-server
+    networks:
+      - prtf-net
+    ports:
+      - 8085:8085
+      - 8084:8084
+    env_file:
+      - ./auth/sso/.env
+    deploy:
+      restart_policy:
+        condition: on-failure
+  auth-postgres:
+    image: postgres
+    container_name: auth-postgres
+    hostname: prtf-auth-postgres
+    networks:
+      - prtf-net
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5435:5432
+    volumes:
+      - prtf-auth-postgres-data:/var/lib/postgresql/data
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  stream-nginx:
+    build:
+      context: ./stream/nginx
+    hostname: stream-nginx
+    labels:
+      - traefik.enable=true
+
+      - traefik.http.routers.stream-nginx.rule=Host(`prtf.localhost`) && PathPrefix(`/stream`)
+      - traefik.http.routers.stream-nginx.entrypoints=web
+      - traefik.http.middlewares.stream-nginx-strip.stripprefix.prefixes=/stream
+      - traefik.http.routers.stream-nginx.middlewares=stream-nginx-strip
+      # - traefik.http.services.stream-nginx-service.loadbalancer.server.port=80
+
+      # - traefik.http.routers.stream-nginx-rtmp.rule=Host(`prtf.localhost`) && PathPrefix(`/rtmp`)
+      # - traefik.http.routers.stream-nginx-rtmp.entrypoints=web
+      # - traefik.http.middlewares.stream-nginx-rtmp-strip.stripprefix.prefixes=/rtmp
+      # - traefik.http.routers.stream-nginx-rtmp.middlewares=stream-nginx-rtmp-strip
+      # - traefik.http.services.stream-nginx-rtmp-service.loadbalancer.server.port=1935
+    ports:
+      - 8091:80
+      - 1935:1935
+    volumes:
+      - prtf-streams:/var/www/hls
+      - prtf-recordings:/var/rec
+      - prtf-vod:/var/vod
+    networks:
+      - prtf-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      restart_policy:
+        condition: on-failure
+  stream-server:
+    build: ./stream/stream-server
+    hostname: stream-server
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stream-server.rule=(Host(`prtf.localhost`) && PathPrefix(`/stream/api`))
+      - traefik.http.routers.stream-server.entrypoints=web
+      - traefik.http.middlewares.stream-server-strip.stripprefix.prefixes=/stream/api
+      - traefik.http.routers.stream-server.middlewares=stream-server-strip
+    ports:
+      - 8092:8092
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=stream
+      - DB_PASSWORD=secret
+      - DB_NAME=streams
+      - CONFIG_PATH=./config/local.yaml
+    depends_on:
+      - stream-postgres
+    volumes:
+      - prtf-vod:/var/vod
+    networks:
+      - prtf-net
+    deploy:
+      restart_policy:
+        condition: on-failure
+  stream-chat-server:
+    build: ./stream/chat-server
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stream-chat-server.rule=Host(`prtf.localhost`) && PathPrefix(`/stream/chat`)
+      - traefik.http.routers.stream-chat-server.entrypoints=web
+      - traefik.http.middlewares.stream-chat-strip.stripprefix.prefixes=/stream/chat
+      - traefik.http.routers.stream-chat-server.middlewares=stream-chat-strip
+    ports:
+      - 8093:8093
+    networks:
+      - prtf-net
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@prtf-stream-postgres:5490/postgres?sslmode=disable
+    depends_on:
+      - stream-postgres
+    deploy:
+      restart_policy:
+        condition: on-failure
+  stream-postgres:
+    image: postgres:17.2-alpine
+    hostname: prtf-stream-postgres
+    ports:
+      - 5490:5490
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - PGPORT=5490
+    volumes:
+      - prtf-stream-postgres-data:/var/lib/postgresql/data
+      # - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - prtf-net
+    deploy:
+      restart_policy:
+        condition: on-failure
+  stream-redis:
+    image: redis:7-alpine
+    hostname: prtf-stream-redis
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - 6390:6379
+    environment:
+      - REDIS_USER=redis
+      - REDIS_PASSWORD=redis
+      - REDIS_USER_PASSWORD=redis
+    volumes:
+      - prtf-stream-redis-data:/data
+    restart: unless-stopped
+    networks:
+      - prtf-net
+
+  # prtf-elasticsearch:
+  #   image: elasticsearch:8.16.3
+  #   hostname: prtf-elasticsearch
+  #   ports:
+  #     - 9290:9200
+  #   environment:
+  #     - discovery.type=single-node
+  #     - ES_JAVA_OPTS=-Xms512M -Xmx512M
+  #     - ELASTIC_USERNAME=elastic
+  #     - ELASTIC_PASSWORD=elastic
+  #   volumes:
+  #     - prtf-es-data:/usr/share/elasticsearch/data
+  #     - ./elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+  #   restart: unless-stopped
+  #   networks:
+  #     - prtf-net
+  # prtf-logstash:
+  #   image: logstash:8.16.3
+  #   hostname: prtf-logstash
+  #   ports:
+  #     - 5090:5044
+  #   environment:
+  #     - LS_JAVA_OPTS=-Xmx512M -Xms512M
+  #   volumes:
+  #     - ./elk/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+  #     - ./elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - prtf-elasticsearch
+  #   networks:
+  #     - prtf-net
+  # prtf-kibana:
+  #   image: kibana:8.16.3
+  #   hostname: prtf-kibana
+  #   ports:
+  #     - 5690:5601
+  #   volumes:
+  #     - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+  #     # - ./elk/kibana-node.options:/usr/share/kibana/config/node.options:ro
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - prtf-elasticsearch
+  #   networks:
+  #     - prtf-net
+  # prtf-filebeat:
+  #   image: elastic/filebeat:8.16.3
+  #   command: filebeat -e -strict.perms=false
+  #   hostname: prtf-filebeat
+  #   user: root
+  #   volumes:
+  #     - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   depends_on:
+  #     - prtf-elasticsearch
+  #   networks:
+  #     - prtf-net
+
+  # prtf-prometheus:
+  #   image: prom/prometheus
+  #   hostname: prtf-prometheus
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+  #   ports:
+  #     - 8990:9090
+  #   restart: unless-stopped
+  #   networks:
+  #     - prtf-net
+  # prtf-grafana:
+  #   image: grafana/grafana
+  #   ports:
+  #     - 8001:3000
+  #   volumes:
+  #     - prtf-grafana-data:/var/lib/grafana
+  #   restart: unless-stopped
+  #   networks:
+  #     - prtf-net
+  # prtf-cadvisor:
+  #   image: gcr.io/cadvisor/cadvisor
+  #   hostname: prtf-cadvisor
+  #   ports:
+  #     - 8099:8080
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:ro
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #   restart: unless-stopped
+  #   networks:
+  #     - prtf-net
+  # prtf-node-exporter:
+  #   image: prom/node-exporter
+  #   hostname: prtf-node-exporter
+  #   ports:
+  #     - 8100:9100
+  #   restart: unless-stopped
+  #   networks:
+  #     - prtf-net
+  # prtf-nginx-exporter:
+  #   image: nginx/nginx-prometheus-exporter
+  #   hostname: prtf-nginx-exporter
+  #   ports:
+  #     - 8013:9113
+  #   command:
+  #     - -nginx.scrape-uri=http://prtf-stream-nginx/nginx_status
+  #   depends_on:
+  #     - prtf-stream-nginx
+  #   restart: unless-stopped
+  #   networks:
+  #     - prtf-net
+
+volumes:
+  prtf-streams:
+  prtf-recordings:
+  prtf-vod:
+  prtf-stream-postgres-data:
+  prtf-auth-postgres-data:
+  prtf-stream-redis-data:
+  prtf-grafana-data:
+  prtf-es-data:
+
+networks:
+  prtf-net:
+    driver: bridge

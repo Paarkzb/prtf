@@ -1,0 +1,11 @@
+env: "local"
+db:
+  host: "prtf-stream-postgres"
+  port: "5490"
+  username: "postgres"
+  password: "postgres"
+  dbname: "postgres"
+  sslmode: "disable"
+http:
+  port: 8092
+  timeout: 5s

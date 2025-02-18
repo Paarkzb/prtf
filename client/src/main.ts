@@ -28,13 +28,15 @@ app.component('font-awesome-icon', FontAwesomeIcon)
 declare global {
   interface Window {
     axios: AxiosInstance
+    gatewayURL: string
     quizApiURL: string
     chatApiURL: string
   }
 }
 
-window.quizApiURL = 'http://localhost:8086/'
-window.chatApiURL = 'http://localhost:8071/'
+window.quizApiURL = 'http://localhost:8086'
+window.chatApiURL = 'http://localhost:8071'
+window.gatewayURL = 'http://prtf.localhost:8090'
 
 window.axios = axiosInstanceConfig
 

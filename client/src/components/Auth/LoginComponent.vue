@@ -16,7 +16,7 @@ function login() {
     password: password.value
   }
   window.axios
-    .post(window.quizApiURL + 'auth/sign-in', loginData)
+    .post(window.gatewayURL + '/auth/v1/sign-in', loginData)
     .then((response) => response.data)
     .then(function (response) {
       store.login(response)
