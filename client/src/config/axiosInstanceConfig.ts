@@ -6,6 +6,8 @@ axiosInstance.defaults.timeout = 2500
 axiosInstance.interceptors.request.use(
   function (config) {
     config.withCredentials = true
+    config.headers.Authorization =
+      'Bearer ' + JSON.parse(localStorage.getItem('user') || '')?.tokens.access_token
     return config
   },
   function (error) {
@@ -17,7 +19,7 @@ axiosInstance.interceptors.response.use(
     return response
   },
   function (error) {
-    if (error.response.status == 401) {
+    if (error.response?.status == 401) {
       router.push({ name: 'login' })
     }
     return Promise.reject(error)

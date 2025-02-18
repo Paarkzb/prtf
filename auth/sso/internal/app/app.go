@@ -17,11 +17,11 @@ type App struct {
 	HTTPServer *server.App
 }
 
-func NewApp(ctx context.Context, log *slog.Logger, port int, db *pgxpool.Pool, accessTokenTTL time.Duration, refreshTokenTTL time.Duration) *App {
+func NewApp(log *slog.Logger, port int, db *pgxpool.Pool, accessTokenTTL time.Duration, refreshTokenTTL time.Duration) *App {
 
 	authRepo := repository.NewRepository(db)
-	songService := authservice.NewAuthService(log, authRepo, authRepo, authRepo, authRepo, accessTokenTTL, refreshTokenTTL)
-	handlers := handler.NewHandler(log, songService)
+	authService := authservice.NewAuthService(log, authRepo, authRepo, authRepo, authRepo, accessTokenTTL, refreshTokenTTL)
+	handlers := handler.NewHandler(log, authService)
 
 	httpServer := server.NewApp(log, handlers.InitRoutes(), port)
 

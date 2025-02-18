@@ -29,7 +29,7 @@ func main() {
 		panic(err)
 	}
 
-	application := app.NewApp(ctx, log, cfg.HTTP.Port, db, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
+	application := app.NewApp(log, cfg.HTTP.Port, db, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 
 	go func() {
 		application.HTTPServer.MustRun()

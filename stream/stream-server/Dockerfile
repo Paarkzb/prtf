@@ -18,8 +18,8 @@ FROM alpine:latest AS build-release-stage
 
 WORKDIR /app/
 
+COPY --from=0 /app/config config/
 COPY --from=0 /app/server ./
-# COPY --from=0 /app/config config/
 # COPY --from=0 /app/.env ./
 
 ENTRYPOINT [ "./server" ]

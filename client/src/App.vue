@@ -42,13 +42,17 @@ function logout() {
         </fwb-dropdown>
         <fwb-navbar-link link="/chat"> Чат </fwb-navbar-link>
         <fwb-navbar-link link="/quiz-complete"> Прохождение квиза </fwb-navbar-link>
+        <fwb-navbar-link link="/stream"> Стрим </fwb-navbar-link>
       </fwb-navbar-collapse>
     </template>
     <template #right-side>
       <fwb-navbar-collapse>
         <fwb-navbar-link link="/login" v-if="!store.isLogged"> Войти </fwb-navbar-link>
+        <fwb-navbar-link link="/signUp" v-if="!store.isLogged">
+          Зарегистрироваться
+        </fwb-navbar-link>
         <fwb-navbar-link @click="logout()" v-else>
-          Выйти ({{ store.user?.username }})</fwb-navbar-link
+          Выйти ({{ store.user.username }})</fwb-navbar-link
         >
       </fwb-navbar-collapse></template
     >
@@ -56,7 +60,7 @@ function logout() {
 
   <div class="bg-slate-800">
     <div class="max-w-screen-lg items-center mx-auto h-full min-h-[100vh] pt-5">
-      <router-view></router-view>
+      <RouterView />
     </div>
   </div>
 </template>

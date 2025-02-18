@@ -48,11 +48,21 @@ const router = createRouter({
       name: 'chat',
       component: () => import('../views/chat/ChatView.vue')
     },
+    {
+      path: '/stream',
+      name: 'stream',
+      component: () => import('../views/stream/StreamView.vue')
+    },
 
     {
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue')
+    },
+    {
+      path: '/signUp',
+      name: 'signUp',
+      component: () => import('../views/SignUpView.vue')
     }
   ]
 })
