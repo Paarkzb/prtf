@@ -35,6 +35,36 @@ export const useUserStore = defineStore('user', {
     },
     logout() {
       this.isLogged = false
+      this.tokens.access_token = ''
+      this.tokens.refresh_token = ''
+    }
+  },
+  persist: true
+})
+
+interface ChannelData {
+  id: string
+  rf_user_id: string
+  live: boolean
+  rf_active_stream_id: string
+  created_at: string
+  updated_at: string
+}
+
+export const useChannelStore = defineStore('channel', {
+  state: () => ({
+    channel: {
+      id: '',
+      rf_user_id: '',
+      live: false,
+      rf_active_stream_id: '',
+      created_at: '',
+      updated_at: ''
+    }
+  }),
+  actions: {
+    login(channelData: ChannelData) {
+      this.channel = channelData
     }
   },
   persist: true

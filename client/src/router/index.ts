@@ -51,9 +51,13 @@ const router = createRouter({
     {
       path: '/stream',
       name: 'stream',
-      component: () => import('../views/stream/StreamView.vue')
+      component: () => import('../views/stream/StreamAppView.vue')
     },
-
+    {
+      path: '/stream/channel/:id',
+      name: 'channelById',
+      component: () => import('../views/stream/ChannelDataView.vue')
+    },
     {
       path: '/login',
       name: 'login',

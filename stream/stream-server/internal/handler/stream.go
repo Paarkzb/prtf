@@ -4,46 +4,36 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"videostream/internal/domain/models"
 
 	"github.com/gin-gonic/gin"
 )
-
-func (h *Handler) saveChannel(c *gin.Context) {
-	userID, err := h.getUserId(c)
-	if err != nil {
-		h.newErrorResponse(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	var channel models.Channel
-	channel.UserID = userID
-
-	_, err = h.streamService.SaveChannel(c, channel)
-	if err != nil {
-		h.newErrorResponse(c, http.StatusInternalServerError, "failed to save channel")
-		return
-	}
-
-	c.Status(http.StatusOK)
-}
-
-func (h *Handler) getAllChannels(c *gin.Context) {
-
-	channels, err := h.streamService.GetAllChannels(c)
-	if err != nil {
-		h.newErrorResponse(c, http.StatusInternalServerError, "failed to save channel")
-		return
-	}
-
-	c.JSON(http.StatusOK, channels)
-}
 
 type Recording struct {
 	Name     string `json:"name"`
 	Path     string `json:"path"`
 	Date     string `json:"date"`
 	Duration string `json:"duration"`
+}
+
+func (h *Handler) startStream(c *gin.Context) {
+	userId, err := h.getUserId(c)
+	if err != nil {
+		return
+	}
+
+	channel, err := h.streamService.GetChannelByUserId(c, userId)
+	if err != nil {
+		h.newErrorResponse(c, http.StatusBadRequest, "channel not found")
+		return
+	}
+
+	streamToken, err := h.streamService.GenerateStreamToken(c, channel)
+	if err != nil {
+		h.newErrorResponse(c, http.StatusInternalServerError, "failed to start stream")
+		return
+	}
+
+	c.JSON(http.StatusOK, channel.ChannelToken+"?token="+streamToken)
 }
 
 func (h *Handler) listRecordingsHandler(c *gin.Context) {
@@ -73,30 +63,34 @@ func (h *Handler) listRecordingsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, recordings)
 }
 
-func isValidStreamKey(key string) bool {
-	return key == "test123"
-}
-
 func (h *Handler) authStreamHandler(c *gin.Context) {
-	key := c.Query("name")
+	channelToken := c.Query("name")
+	streamToken := c.Query("token")
 
-	h.log.Infow(key, " started stream")
+	h.log.Infow(channelToken, " started stream")
 
-	if key == "" {
+	if channelToken == "" {
+		h.newErrorResponse(c, http.StatusBadRequest, "stream key required")
+		return
+	}
+	if streamToken == "" {
 		h.newErrorResponse(c, http.StatusBadRequest, "stream key required")
 		return
 	}
 
-	if isValidStreamKey(key) {
-		// mu.Lock()
-		// activeStreams[key] = true
-		// mu.Unlock()
-
-		c.Status(http.StatusOK)
+	userID, err := h.streamService.ValidateStreamToken(c, channelToken, streamToken)
+	if err != nil {
+		h.newErrorResponse(c, http.StatusInternalServerError, "failed to auth stream")
 		return
 	}
 
-	h.newErrorResponse(c, http.StatusUnauthorized, "invalid stream key")
+	streamID, err := h.streamService.StartStream(c, userID)
+	if err != nil {
+		h.newErrorResponse(c, http.StatusInternalServerError, "failed to start stream")
+		return
+	}
+
+	c.JSON(http.StatusOK, streamID)
 }
 
 func (h *Handler) listStreamsHandler(c *gin.Context) {

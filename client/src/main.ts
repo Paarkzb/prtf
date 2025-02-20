@@ -34,6 +34,8 @@ declare global {
   }
 }
 
+
+
 window.quizApiURL = 'http://localhost:8086'
 window.chatApiURL = 'http://localhost:8071'
 window.gatewayURL = 'http://prtf.localhost:8090'
