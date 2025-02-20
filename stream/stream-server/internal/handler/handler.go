@@ -49,16 +49,23 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		c.JSON(http.StatusOK, "pong")
 	})
 
-	mux.GET("/auth/stream", h.authStreamHandler)
-	mux.GET("/streams", h.listStreamsHandler)
+	streamApi := mux.Group("/streams", h.userIdentity)
+	{
+		streamApi.GET("", h.listStreamsHandler)
+		streamApi.POST("/start", h.startStream)
+		streamApi.GET("/auth", h.authStreamHandler)
+	}
 
 	mux.GET("/recordings", h.listRecordingsHandler)
 	// mux.Handle("/vod/", http.StripPrefix("/vod/", http.FileServer(http.Dir("/var/vod"))))
 
-	api := mux.Group("/channel", h.userIdentity)
+	channelApi := mux.Group("/channels", h.userIdentity)
 	{
-		api.POST("/", h.saveChannel)
-		api.GET("/", h.getAllChannels)
+		channelApi.POST("", h.saveChannel)
+		channelApi.GET("", h.getAllChannels)
+		channelApi.GET("/:id", h.getChannelById)
+
+		channelApi.GET("/user", h.getChannelByUserId)
 	}
 
 	return mux

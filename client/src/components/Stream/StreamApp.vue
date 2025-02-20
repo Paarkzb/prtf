@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref, watchEffect } from 'vue'
 import Hls, { Level } from 'hls.js'
+import router from '@/router'
 import Swal from 'sweetalert2'
-
-const chatServer = 'prtf.localhost:8090/stream/chat'
-const streamServer = 'http://prtf.localhost:8090/stream'
-const apiServer = 'http://prtf.localhost:8090/stream/api'
+import { useChannelStore } from '@/stores/store'
 
 // Чат
-const ws = new WebSocket('ws://' + chatServer + 'ws')
+const ws = new WebSocket('ws://prtf.localhost:8090/stream/chat/ws')
 
 const chatMessages = ref([] as ChatMessage[])
 const chatInput = ref('')
@@ -54,9 +52,9 @@ const videoQuality = ref()
 
 function getActiveStreams() {
   window.axios
-    .get(apiServer + '/streams')
+    .get(window.gatewayURL + '/stream/api/streams')
     .then((streams) => {
-      activeStreams.value = Object.keys(streams)
+      activeStreams.value = Object.keys(streams.data)
     })
     .catch((error) => {
       console.log(error)
@@ -71,7 +69,7 @@ function getActiveStreams() {
 const video = ref({} as HTMLMediaElement)
 
 function playStream(streamKey: string) {
-  const masterPlaylistUrl = `${streamServer}/hls/${streamKey}.m3u8`
+  const masterPlaylistUrl = `${window.gatewayURL}/stream/hls/${streamKey}.m3u8`
 
   if (Hls.isSupported()) {
     hls.attachMedia(video.value)
@@ -100,10 +98,10 @@ declare interface Recording {
 
 function getRecordings() {
   window.axios
-    .get(apiServer + '/recordings')
+    .get(window.gatewayURL + '/stream/api/recordings')
     .then((rec) => {
-      console.log(rec)
-      // recordings.value = rec
+      console.log(rec.data)
+      recordings.value = rec.data
     })
     .catch((error) => {
       console.log(error)
@@ -117,17 +115,38 @@ function getRecordings() {
 
 const recordingVideo = ref({} as HTMLMediaElement)
 function playRecording(path: string) {
-  const recordingUrl = `${streamServer}/vod/${path}`
+  const recordingUrl = `${window.gatewayURL}/stream/vod/${path}`
   recordingVideo.value.src = recordingUrl
   recordingVideo.value.load()
   recordingVideo.value.play()
 }
 
+// Канал
+
+const channelStore = useChannelStore()
+
+function getMyChannel() {
+  window.axios
+    .get(window.gatewayURL + '/stream/api/channels/user')
+    .then((resp) => {
+      console.log(resp.data)
+      channelStore.login(resp.data)
+    })
+    .catch((error) => {
+      console.log(error)
+      Swal.fire({
+        title: 'Ошибка',
+        text: 'Неудалось получить данные канала',
+        icon: 'error'
+      })
+    })
+}
+
 function saveChannel() {
   window.axios
-    .post(streamServer + '/api/api/channel')
+    .post(window.gatewayURL + '/stream/api/channels')
     .then((resp) => {
-      console.log(resp)
+      console.log(resp.data)
     })
     .catch((error) => {
       console.log(error)
@@ -139,16 +158,65 @@ function saveChannel() {
     })
 }
 
+declare interface Channel {
+  id: string
+  rf_user_id: string
+  live: boolean
+  rf_active_stream_id: string
+  created_at: Date
+  updated_ad: Date
+}
+
+const channels = ref([] as Channel[])
+
+function getChannels() {
+  window.axios
+    .get(window.gatewayURL + '/stream/api/channels')
+    .then((rec) => {
+      console.log(rec.data)
+      channels.value = rec.data
+    })
+    .catch((error) => {
+      console.log(error)
+      Swal.fire({
+        title: 'Ошибка',
+        text: 'Неудалось получить записи',
+        icon: 'error'
+      })
+    })
+}
+
 onMounted(() => {
+  getMyChannel()
   getActiveStreams()
   getRecordings()
+  getChannels()
 })
 </script>
 
 <template>
-  <button @click="saveChannel()">Создать канал</button>
-  <h1>Active Streams</h1>
-  <div id="streams">
+  <button @click="saveChannel()" class="p-2 border bg-blue-300">Создать канал</button>
+  <button
+    @click="router.push({ name: 'channelById', params: { id: channelStore.channel.id } })"
+    class="p-2 border bg-blue-300"
+  >
+    Мой канал
+  </button>
+
+  <h1 class="text-4xl text-center">Список каналов</h1>
+  <div>
+    <div v-for="(channel, idx) in channels" :key="idx">
+      <button
+        class="p-2 bg-red-300 border"
+        @click="router.push({ name: 'channelById', params: { id: channel.id } })"
+      >
+        {{ channel.id }} {{ channel.live ? 'Онлайн' : 'Оффлайн' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- <h1>Active Streams</h1>
+  <div>
     <div v-for="stream in activeStreams" :key="stream">
       <button @click="playStream(stream)">{{ stream }}</button>
     </div>
@@ -196,5 +264,5 @@ onMounted(() => {
       placeholder="Напишите сообщение ..."
     />
     <button @click="sendMessage()">Отправить</button>
-  </div>
+  </div> -->
 </template>
