@@ -49,11 +49,11 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		c.JSON(http.StatusOK, "pong")
 	})
 
+	mux.GET("/auth/stream", h.authStreamHandler)
 	streamApi := mux.Group("/streams", h.userIdentity)
 	{
 		streamApi.GET("", h.listStreamsHandler)
 		streamApi.POST("/start", h.startStream)
-		streamApi.GET("/auth", h.authStreamHandler)
 	}
 
 	mux.GET("/recordings", h.listRecordingsHandler)

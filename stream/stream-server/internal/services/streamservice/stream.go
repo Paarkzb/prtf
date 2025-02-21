@@ -4,10 +4,9 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
-	"time"
 	"videostream/internal/domain/models"
-	"videostream/internal/lib/jwt"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -18,10 +17,12 @@ type ChannelProvider interface {
 	GetAllChannels(ctx context.Context) ([]models.Channel, error)
 	GetChannelById(ctx context.Context, channelID uuid.UUID) (models.Channel, error)
 	GetChannelByUserId(ctx context.Context, userId uuid.UUID) (models.Channel, error)
+	GetChannelByChannelToken(ctx context.Context, channelToken string) (models.Channel, error)
 	GetChannelTokenById(ctx context.Context, channelID uuid.UUID) (string, error)
 }
 
 type StreamProvider interface {
+	StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error)
 }
 
 type StreamService struct {
@@ -30,10 +31,11 @@ type StreamService struct {
 	streamProvider  StreamProvider
 }
 
-func NewStreamService(log *zap.SugaredLogger, channelProvider ChannelProvider) *StreamService {
+func NewStreamService(log *zap.SugaredLogger, channelProvider ChannelProvider, streamProvider StreamProvider) *StreamService {
 	return &StreamService{
 		log:             log,
 		channelProvider: channelProvider,
+		streamProvider:  streamProvider,
 	}
 }
 
@@ -51,6 +53,11 @@ func (s *StreamService) SaveChannel(ctx context.Context, channel models.Channel)
 	log := s.log.With("op", op, "userID", channel.RfUserID)
 
 	channelToken := generateChannelToken()
+
+	if len(channelToken) == 0 {
+		log.Infow("failed to save channel")
+		return uuid.Nil, fmt.Errorf("%s, %w", op, errors.New("failed to generate token"))
+	}
 
 	var channelID uuid.UUID
 	channelID, err := s.channelProvider.SaveChannel(ctx, channel, channelToken)
@@ -104,45 +111,44 @@ func (s *StreamService) GetChannelByUserId(ctx context.Context, userID uuid.UUID
 	return channel, nil
 }
 
-func (s *StreamService) GenerateStreamToken(ctx context.Context, channel models.Channel) (string, error) {
-	const op = "StreamService.GenerateStreamToken"
+// func (s *StreamService) GenerateStreamToken(ctx context.Context, channel models.Channel) (string, error) {
+// 	const op = "StreamService.GenerateStreamToken"
 
-	log := s.log.With("op", op, "userID", channel.RfUserID)
+// 	log := s.log.With("op", op, "userID", channel.RfUserID)
 
-	streamToken, err := jwt.NewStreamToken(channel, 1*time.Hour)
-	if err != nil {
-		log.Infow("failed to generate stream token", "err", err)
-		return "", fmt.Errorf("%s, %w", op, err)
-	}
+// 	streamToken, err := jwt.NewStreamToken(channel, 1*time.Hour)
+// 	if err != nil {
+// 		log.Infow("failed to generate stream token", "err", err)
+// 		return "", fmt.Errorf("%s, %w", op, err)
+// 	}
 
-	return streamToken, nil
-}
+// 	return streamToken, nil
+// }
 
-func (s *StreamService) ValidateStreamToken(ctx context.Context, channelToken string, streamToken string) (uuid.UUID, error) {
+func (s *StreamService) ValidateStreamToken(ctx context.Context, streamKey string) (uuid.UUID, error) {
 	const op = "StreamService.ValidateStreamToken"
 
-	log := s.log.With("op", op, "channelToken", channelToken)
+	log := s.log.With("op", op, "streamKey", streamKey)
 
-	claims, err := jwt.ParseStreamToken(streamToken)
+	channel, err := s.channelProvider.GetChannelByChannelToken(ctx, streamKey)
 	if err != nil {
-		log.Infow("uncorrect stream token")
+		log.Infow("uncorrect stream token", "err", err)
 		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
 	}
 
-	userID, err := uuid.Parse(claims["uid"].(string))
-	if err != nil {
-		log.Infow("uncorrect stream token")
-		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
-	}
-
-	if claims["channel_token"] != channelToken {
-		log.Infow("uncorrect stream key")
-		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
-	}
-
-	return userID, nil
+	return channel.ID, nil
 }
 
-func (s *StreamService) StartStream(ctx context.Context, userID uuid.UUID) (uuid.UUID, error) {
+func (s *StreamService) StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error) {
+	const op = "StreamService.ValidateStreamToken"
 
+	log := s.log.With("op", op, "channelID", channelID)
+
+	streamID, err := s.streamProvider.StartStream(ctx, channelID)
+	if err != nil {
+		log.Infow("failed to start stream", "err", err)
+		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
+	}
+
+	return streamID, nil
 }

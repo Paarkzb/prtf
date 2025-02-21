@@ -96,6 +96,24 @@ func (r *RepositoryPostgres) GetChannelByUserId(ctx context.Context, userID uuid
 	return channel, nil
 }
 
+func (r *RepositoryPostgres) GetChannelByChannelToken(ctx context.Context, channelToken string) (models.Channel, error) {
+	const op = "Repository.postgres.getChannelByChannelToken"
+
+	query := `
+		SELECT c.id, c.rf_user_id, c.live, c.rf_active_stream_id, c.channel_token, c.created_at, c.updated_at
+		FROM public.channels as c
+		WHERE c.channel_token = $1
+	`
+	var channel models.Channel
+
+	err := r.db.QueryRow(ctx, query, channelToken).Scan(&channel.ID, &channel.RfUserID, &channel.Live, &channel.RfActiveStreamID, &channel.ChannelToken, &channel.CreatedAt, &channel.UpdatedAt)
+	if err != nil {
+		return channel, fmt.Errorf("%s:%w", op, err)
+	}
+
+	return channel, nil
+}
+
 func (r *RepositoryPostgres) GetChannelTokenById(ctx context.Context, channelID uuid.UUID) (string, error) {
 	const op = "Repository.postgres.GetChannelTokenById"
 
@@ -113,4 +131,46 @@ func (r *RepositoryPostgres) GetChannelTokenById(ctx context.Context, channelID 
 	}
 
 	return channelToken, nil
+}
+
+func (r *RepositoryPostgres) StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error) {
+	const op = "Repository.postgres.StartStream"
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	query := `
+		INSERT INTO public.streams(rf_channel_id)
+		SELECT c.id
+		FROM public.channels as c
+		WHERE c.id = $1
+		RETURNING public.streams.id
+	`
+	var streamID uuid.UUID
+
+	err = tx.QueryRow(ctx, query, channelID).Scan(&streamID)
+	if err != nil {
+		_ = tx.Rollback(ctx)
+		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	query = `
+		UPDATE public.channels SET rf_active_stream_id = $1
+	`
+
+	_, err = tx.Exec(ctx, query, streamID)
+	if err != nil {
+		_ = tx.Rollback(ctx)
+		return uuid.Nil, fmt.Errorf("%s:%w", op, err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		_ = tx.Rollback(ctx)
+		return uuid.Nil, fmt.Errorf("%s:%w", op, err)
+	}
+
+	return streamID, nil
 }
