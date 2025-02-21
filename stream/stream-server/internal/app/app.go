@@ -18,7 +18,7 @@ type App struct {
 func NewApp(log *zap.SugaredLogger, port int, db *pgxpool.Pool) *App {
 
 	streamRepo := repository.NewRepositoryPostgres(db)
-	streamService := streamservice.NewStreamService(log, streamRepo)
+	streamService := streamservice.NewStreamService(log, streamRepo, streamRepo)
 	streamHandler := handler.NewHandler(log, streamService)
 
 	httpServer := server.NewServer(log, streamHandler.InitRoutes(), port)

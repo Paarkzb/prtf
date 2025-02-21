@@ -29,7 +29,7 @@ func ParseToken(accessToken string) (jwt.MapClaims, error) {
 }
 
 const (
-	signingKey = "laldsnvopPO@U!@POJfopjx?><M@!KM/lvkdsj"
+	streamSigningKey = "laldsnvopPO@U!@POJfopjx?><M@!KM/lvkdsj"
 )
 
 func NewStreamToken(channel models.Channel, duration time.Duration) (string, error) {
@@ -41,18 +41,18 @@ func NewStreamToken(channel models.Channel, duration time.Duration) (string, err
 	claims["exp"] = time.Now().Add(duration).Unix()
 	claims["iat"] = time.Now().Unix()
 
-	accessToken, err := token.SignedString([]byte(signingKey))
+	streamToken, err := token.SignedString([]byte(streamSigningKey))
 	if err != nil {
 		return "", err
 	}
 
-	return accessToken, nil
+	return streamToken, nil
 }
 
 func ParseStreamToken(streamToken string) (jwt.MapClaims, error) {
 
 	token, err := jwt.Parse(streamToken, func(t *jwt.Token) (interface{}, error) {
-		return []byte(signingKey), nil
+		return []byte(streamSigningKey), nil
 	})
 
 	if err != nil {
