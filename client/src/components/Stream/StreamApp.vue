@@ -4,6 +4,7 @@ import Hls, { Level } from 'hls.js'
 import router from '@/router'
 import Swal from 'sweetalert2'
 import { useChannelStore } from '@/stores/store'
+import { Channel } from './types'
 
 // Чат
 const ws = new WebSocket('ws://prtf.localhost:8090/stream/chat/ws')
@@ -158,15 +159,6 @@ function saveChannel() {
     })
 }
 
-declare interface Channel {
-  id: string
-  rf_user_id: string
-  live: boolean
-  rf_active_stream_id: string
-  created_at: Date
-  updated_ad: Date
-}
-
 const channels = ref([] as Channel[])
 
 function getChannels() {
@@ -210,7 +202,7 @@ onMounted(() => {
         class="p-2 bg-red-300 border"
         @click="router.push({ name: 'channelById', params: { id: channel.id } })"
       >
-        {{ channel.id }} {{ channel.live ? 'Онлайн' : 'Оффлайн' }}
+        {{ channel.channel_name }} {{ channel.live ? 'Онлайн' : 'Оффлайн' }}
       </button>
     </div>
   </div>

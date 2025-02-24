@@ -102,7 +102,7 @@ services:
       - 8091:80
       - 1935:1935
     volumes:
-      - prtf-streams:/var/www/hls
+      - prtf-streams:/var/hls
       - prtf-recordings:/var/rec
       - prtf-vod:/var/vod
     networks:

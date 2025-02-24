@@ -37,7 +37,7 @@ func (r *RepositoryPostgres) GetAllChannels(ctx context.Context) ([]models.Chann
 	const op = "Repository.postgres.GetAllChannels"
 
 	query := `
-		SELECT c.id, c.rf_user_id, c.live, c.rf_active_stream_id, c.created_at, c.updated_at
+		SELECT c.id, c.rf_user_id, c.channel_name, c.live, c.rf_active_stream_id, c.created_at, c.updated_at
 		FROM public.channels as c
 	`
 	channels := make([]models.Channel, 0)
@@ -49,13 +49,14 @@ func (r *RepositoryPostgres) GetAllChannels(ctx context.Context) ([]models.Chann
 
 	for rows.Next() {
 		var channel models.Channel
-		err = rows.Scan(&channel.ID, &channel.RfUserID, &channel.Live, &channel.RfActiveStreamID, &channel.CreatedAt, &channel.UpdatedAt)
+		err = rows.Scan(&channel.ID, &channel.RfUserID, &channel.ChannelName, &channel.Live, &channel.RfActiveStreamID, &channel.CreatedAt, &channel.UpdatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("%s:%w", op, err)
 		}
 
 		channels = append(channels, channel)
 	}
+	rows.Close()
 
 	return channels, nil
 }
@@ -64,13 +65,13 @@ func (r *RepositoryPostgres) GetChannelById(ctx context.Context, channelID uuid.
 	const op = "Repository.postgres.GetChannelById"
 
 	query := `
-		SELECT c.id, c.rf_user_id, c.live, c.rf_active_stream_id, c.created_at, c.updated_at
+		SELECT c.id, c.rf_user_id, c.channel_name, c.live, c.rf_active_stream_id, c.created_at, c.updated_at
 		FROM public.channels as c
 		WHERE c.id = $1
 	`
 	var channel models.Channel
 
-	err := r.db.QueryRow(ctx, query, channelID).Scan(&channel.ID, &channel.RfUserID, &channel.Live, &channel.RfActiveStreamID, &channel.CreatedAt, &channel.UpdatedAt)
+	err := r.db.QueryRow(ctx, query, channelID).Scan(&channel.ID, &channel.RfUserID, &channel.ChannelName, &channel.Live, &channel.RfActiveStreamID, &channel.CreatedAt, &channel.UpdatedAt)
 	if err != nil {
 		return channel, fmt.Errorf("%s:%w", op, err)
 	}
@@ -82,13 +83,13 @@ func (r *RepositoryPostgres) GetChannelByUserId(ctx context.Context, userID uuid
 	const op = "Repository.postgres.GetChannelByUserId"
 
 	query := `
-		SELECT c.id, c.rf_user_id, c.live, c.rf_active_stream_id, c.channel_token, c.created_at, c.updated_at
+		SELECT c.id, c.rf_user_id, c.channel_name, c.live, c.rf_active_stream_id, c.channel_token, c.created_at, c.updated_at
 		FROM public.channels as c
 		WHERE c.rf_user_id = $1
 	`
 	var channel models.Channel
 
-	err := r.db.QueryRow(ctx, query, userID).Scan(&channel.ID, &channel.RfUserID, &channel.Live, &channel.RfActiveStreamID, &channel.ChannelToken, &channel.CreatedAt, &channel.UpdatedAt)
+	err := r.db.QueryRow(ctx, query, userID).Scan(&channel.ID, &channel.RfUserID, &channel.ChannelName, &channel.Live, &channel.RfActiveStreamID, &channel.ChannelToken, &channel.CreatedAt, &channel.UpdatedAt)
 	if err != nil {
 		return channel, fmt.Errorf("%s:%w", op, err)
 	}
@@ -100,13 +101,13 @@ func (r *RepositoryPostgres) GetChannelByChannelToken(ctx context.Context, chann
 	const op = "Repository.postgres.getChannelByChannelToken"
 
 	query := `
-		SELECT c.id, c.rf_user_id, c.live, c.rf_active_stream_id, c.channel_token, c.created_at, c.updated_at
+		SELECT c.id, c.rf_user_id, c.channel_name, c.live, c.rf_active_stream_id, c.channel_token, c.created_at, c.updated_at
 		FROM public.channels as c
 		WHERE c.channel_token = $1
 	`
 	var channel models.Channel
 
-	err := r.db.QueryRow(ctx, query, channelToken).Scan(&channel.ID, &channel.RfUserID, &channel.Live, &channel.RfActiveStreamID, &channel.ChannelToken, &channel.CreatedAt, &channel.UpdatedAt)
+	err := r.db.QueryRow(ctx, query, channelToken).Scan(&channel.ID, &channel.RfUserID, &channel.ChannelName, &channel.Live, &channel.RfActiveStreamID, &channel.ChannelToken, &channel.CreatedAt, &channel.UpdatedAt)
 	if err != nil {
 		return channel, fmt.Errorf("%s:%w", op, err)
 	}
@@ -133,6 +134,36 @@ func (r *RepositoryPostgres) GetChannelTokenById(ctx context.Context, channelID 
 	return channelToken, nil
 }
 
+func (r *RepositoryPostgres) GetActiveChannels(ctx context.Context) ([]models.Channel, error) {
+	const op = "Repository.postgres.GetActiveChannels"
+
+	query := `
+		SELECT c.id, c.rf_user_id, c.channel_name, c.live, c.rf_active_stream_id, c.channel_token, c.created_at, c.updated_at
+		FROM public.channels as c
+		WHERE c.rf_active_stream_id = true
+	`
+
+	var channels []models.Channel
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("%s:%w", op, err)
+	}
+
+	for rows.Next() {
+		var channel models.Channel
+		err = rows.Scan(&channel.ID, &channel.RfUserID, &channel.ChannelName, &channel.Live, &channel.RfActiveStreamID, &channel.CreatedAt, &channel.UpdatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("%s:%w", op, err)
+		}
+
+		channels = append(channels, channel)
+	}
+	rows.Close()
+
+	return channels, nil
+}
+
 func (r *RepositoryPostgres) StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error) {
 	const op = "Repository.postgres.StartStream"
 
@@ -157,10 +188,10 @@ func (r *RepositoryPostgres) StartStream(ctx context.Context, channelID uuid.UUI
 	}
 
 	query = `
-		UPDATE public.channels SET rf_active_stream_id = $1
+		UPDATE public.channels SET rf_active_stream_id = $1, live=true WHERE public.channels.id = $2
 	`
 
-	_, err = tx.Exec(ctx, query, streamID)
+	_, err = tx.Exec(ctx, query, streamID, channelID)
 	if err != nil {
 		_ = tx.Rollback(ctx)
 		return uuid.Nil, fmt.Errorf("%s:%w", op, err)
