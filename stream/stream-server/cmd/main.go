@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,17 +9,11 @@ import (
 	"videostream/internal/app"
 	"videostream/internal/config"
 	"videostream/internal/repository/postgres"
+	"videostream/internal/repository/redis"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
-
-var rdb = redis.NewClient(&redis.Options{
-	Addr:     "prtf-stream-redis:6379",
-	Password: "redis",
-	DB:       0,
-})
 
 func recordMetrics() {
 	go func() {
@@ -70,18 +63,10 @@ func main() {
 
 	ctx := context.Background()
 
-	db, err := postgres.NewPostgresDB(ctx, cfg.DB)
-	if err != nil {
-		panic(err)
-	}
+	pdb := postgres.NewPostgresDB(ctx, cfg.DB)
+	rdb := redis.NewRedisDB(ctx, cfg.RDB)
 
-	// redis
-	err = rdb.Ping(context.Background()).Err()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	application := app.NewApp(sugar, cfg.HTTP.Port, db)
+	application := app.NewApp(sugar, cfg.HTTP.Port, pdb, rdb)
 
 	go func() {
 		application.Server.MustRun()
@@ -93,7 +78,7 @@ func main() {
 	<-stop
 
 	application.Stop(ctx)
-	db.Close()
+	pdb.Close()
 	sugar.Infow("gracefully stopped")
 }
 

@@ -96,17 +96,6 @@ func (h *Handler) authStreamHandler(c *gin.Context) {
 
 func (h *Handler) listStreamsHandler(c *gin.Context) {
 
-	// cached, err := rdb.Get(context.Background(), "streams").Bytes()
-	// if err == nil {
-	// 	w.Write(cached)
-	// 	return
-	// }
-
-	// mu.Lock()
-	// rdb.Set(context.Background(), "streams", activeStreams, 10*time.Second)
-
-	// defer mu.Unlock()
-
 	// c.JSON(http.StatusOK, activeStreams)
 	c.Status(http.StatusOK)
 }
