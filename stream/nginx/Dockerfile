@@ -42,4 +42,5 @@ RUN mkdir -p /var/www/hls /var/rec /var/vod && \
     chown -R nginx:nginx /var/www /var/rec /var/vod
     
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY generate_master_playlist.sh /var/rec/
 
