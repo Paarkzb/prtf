@@ -11,6 +11,7 @@ type Config struct {
 	Env  string     `yaml:"env" env-default:"local"`
 	HTTP HTTPConfig `yaml:"http"`
 	DB   DBConfig   `yaml:"db"`
+	RDB  RDBConfig  `yaml:"rdb"`
 }
 
 type HTTPConfig struct {
@@ -25,6 +26,14 @@ type DBConfig struct {
 	Password string `yaml:"password"`
 	DBName   string `yaml:"dbname"`
 	SSLMode  string `yaml:"sslmode"`
+}
+
+type RDBConfig struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+	DB       int    `yaml:"db"`
 }
 
 func MustLoad(configPath string) *Config {

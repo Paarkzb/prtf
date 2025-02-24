@@ -26,17 +26,24 @@ type StreamProvider interface {
 	GetActiveChannels(ctx context.Context) ([]models.Channel, error)
 }
 
+type RedisProvider interface {
+	SetChannels(ctx context.Context, channels []models.Channel) error
+	GetChannels(ctx context.Context) ([]models.Channel, error)
+}
+
 type StreamService struct {
 	log             *zap.SugaredLogger
 	channelProvider ChannelProvider
 	streamProvider  StreamProvider
+	redisProvider   RedisProvider
 }
 
-func NewStreamService(log *zap.SugaredLogger, channelProvider ChannelProvider, streamProvider StreamProvider) *StreamService {
+func NewStreamService(log *zap.SugaredLogger, channelProvider ChannelProvider, streamProvider StreamProvider, redisProvider RedisProvider) *StreamService {
 	return &StreamService{
 		log:             log,
 		channelProvider: channelProvider,
 		streamProvider:  streamProvider,
+		redisProvider:   redisProvider,
 	}
 }
 
