@@ -73,21 +73,25 @@ func (h *Handler) authStreamHandler(c *gin.Context) {
 		return
 	}
 
-	channelID, err := h.streamService.ValidateStreamToken(c, streamKey)
+	channel, err := h.streamService.ValidateStreamToken(c, streamKey)
 	if err != nil {
 		h.newErrorResponse(c, http.StatusInternalServerError, "failed to auth stream")
 		return
 	}
 
-	h.log.Infow("streamKey valid", "channelID", channelID)
+	h.log.Infow("streamKey valid", "channelID", channel.ID)
 
-	_, err = h.streamService.StartStream(c, channelID)
+	_, err = h.streamService.StartStream(c, channel.ID)
 	if err != nil {
 		h.newErrorResponse(c, http.StatusInternalServerError, "failed to start stream")
 		return
 	}
 
-	c.Status(http.StatusOK)
+	//
+
+	c.Writer.Header().Add("Location", channel.ChannelName)
+
+	c.Status(http.StatusMovedPermanently)
 }
 
 func (h *Handler) listStreamsHandler(c *gin.Context) {

@@ -23,6 +23,7 @@ type ChannelProvider interface {
 
 type StreamProvider interface {
 	StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error)
+	GetActiveChannels(ctx context.Context) ([]models.Channel, error)
 }
 
 type StreamService struct {
@@ -125,7 +126,7 @@ func (s *StreamService) GetChannelByUserId(ctx context.Context, userID uuid.UUID
 // 	return streamToken, nil
 // }
 
-func (s *StreamService) ValidateStreamToken(ctx context.Context, streamKey string) (uuid.UUID, error) {
+func (s *StreamService) ValidateStreamToken(ctx context.Context, streamKey string) (models.Channel, error) {
 	const op = "StreamService.ValidateStreamToken"
 
 	log := s.log.With("op", op, "streamKey", streamKey)
@@ -133,10 +134,10 @@ func (s *StreamService) ValidateStreamToken(ctx context.Context, streamKey strin
 	channel, err := s.channelProvider.GetChannelByChannelToken(ctx, streamKey)
 	if err != nil {
 		log.Infow("uncorrect stream token", "err", err)
-		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
+		return channel, fmt.Errorf("%s, %w", op, err)
 	}
 
-	return channel.ID, nil
+	return channel, nil
 }
 
 func (s *StreamService) StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error) {
@@ -151,4 +152,18 @@ func (s *StreamService) StartStream(ctx context.Context, channelID uuid.UUID) (u
 	}
 
 	return streamID, nil
+}
+
+func (s *StreamService) GetActiveChannels(ctx context.Context) ([]models.Channel, error) {
+	const op = "StreamService.GetActiveChannels"
+
+	log := s.log.With("op", op)
+
+	channels, err := s.streamProvider.GetActiveChannels(ctx)
+	if err != nil {
+		log.Infow("failed to start stream", "err", err)
+		return nil, fmt.Errorf("%s, %w", op, err)
+	}
+
+	return channels, nil
 }
