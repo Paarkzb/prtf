@@ -38,9 +38,11 @@ RUN apk update && apk add ffmpeg
 
 COPY --from=builder /usr/local/nginx/modules/ngx_http_flv_live_module.so /etc/nginx/modules/
 
-RUN mkdir -p /var/www/hls /var/rec /var/vod && \
-    chown -R nginx:nginx /var/www /var/rec /var/vod
-    
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY generate_master_playlist.sh /var/rec/
+
+RUN mkdir -p /var/www/hls /var/rec /var/vod && \
+    chown -R nginx:nginx /var/www /var/rec /var/vod    
+
+
+
 

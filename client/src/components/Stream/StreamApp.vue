@@ -4,7 +4,7 @@ import Hls, { Level } from 'hls.js'
 import router from '@/router'
 import Swal from 'sweetalert2'
 import { useChannelStore } from '@/stores/store'
-import { Channel } from './types'
+import { Channel, Recording } from './types'
 
 // Чат
 const ws = new WebSocket('ws://prtf.localhost:8090/stream/chat/ws')
@@ -89,13 +89,6 @@ watchEffect(() => {
     hls.currentLevel = videoQuality.value
   }
 })
-
-declare interface Recording {
-  date: Date
-  duration: string
-  name: string
-  path: string
-}
 
 function getRecordings() {
   window.axios

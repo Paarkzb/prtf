@@ -11,7 +11,6 @@ import (
 func NewRedisDB(ctx context.Context, cfg config.RDBConfig) *redis.Client {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),
-		Username: cfg.Username,
 		Password: cfg.Password,
 		DB:       cfg.DB,
 	})

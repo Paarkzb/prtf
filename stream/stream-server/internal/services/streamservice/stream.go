@@ -19,10 +19,12 @@ type ChannelProvider interface {
 	GetChannelByUserId(ctx context.Context, userId uuid.UUID) (models.Channel, error)
 	GetChannelByChannelToken(ctx context.Context, channelToken string) (models.Channel, error)
 	GetChannelTokenById(ctx context.Context, channelID uuid.UUID) (string, error)
+	GetChannelRecordings(ctx context.Context, channelID uuid.UUID) ([]models.Recording, error)
 }
 
 type StreamProvider interface {
 	StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error)
+	EndStream(ctx context.Context, channelID uuid.UUID, recordPath string) (uuid.UUID, error)
 	GetActiveChannels(ctx context.Context) ([]models.Channel, error)
 }
 
@@ -148,13 +150,27 @@ func (s *StreamService) ValidateStreamToken(ctx context.Context, streamKey strin
 }
 
 func (s *StreamService) StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error) {
-	const op = "StreamService.ValidateStreamToken"
+	const op = "StreamService.StartStream"
 
 	log := s.log.With("op", op, "channelID", channelID)
 
 	streamID, err := s.streamProvider.StartStream(ctx, channelID)
 	if err != nil {
 		log.Infow("failed to start stream", "err", err)
+		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
+	}
+
+	return streamID, nil
+}
+
+func (s *StreamService) EndStream(ctx context.Context, channelID uuid.UUID, recordPath string) (uuid.UUID, error) {
+	const op = "StreamService.EndStream"
+
+	log := s.log.With("op", op, "channelID", channelID)
+
+	streamID, err := s.streamProvider.EndStream(ctx, channelID, recordPath)
+	if err != nil {
+		log.Infow("failed to end stream", "err", err)
 		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
 	}
 
@@ -173,4 +189,18 @@ func (s *StreamService) GetActiveChannels(ctx context.Context) ([]models.Channel
 	}
 
 	return channels, nil
+}
+
+func (s *StreamService) GetChannelRecordings(ctx context.Context, channelID uuid.UUID) ([]models.Recording, error) {
+	const op = "StreamService.GetChannelRecordings"
+
+	log := s.log.With("op", op, "channelID", channelID)
+
+	recordings, err := s.channelProvider.GetChannelRecordings(ctx, channelID)
+	if err != nil {
+		log.Infow("failed to get recordings", "err", err)
+		return nil, fmt.Errorf("%s, %w", op, err)
+	}
+
+	return recordings, nil
 }
