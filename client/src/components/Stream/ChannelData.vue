@@ -3,7 +3,8 @@ import { useRoute } from 'vue-router'
 import { onMounted, ref, watchEffect } from 'vue'
 import Swal from 'sweetalert2'
 import Hls, { Level } from 'hls.js'
-import { Channel } from './types'
+import { Channel, Recording } from './types'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 
 const route = useRoute()
 
@@ -73,6 +74,57 @@ function playStream() {
   }
 }
 
+const recordings = ref([] as Recording[])
+
+function getRecordings() {
+  console.log('test', channelData.value)
+  window.axios
+    .get(window.gatewayURL + '/stream/api/channels/' + id + '/recordings')
+    .then((rec) => {
+      console.log(rec.data)
+      recordings.value = rec.data
+    })
+    .catch((error) => {
+      console.log(error)
+      Swal.fire({
+        title: 'Ошибка',
+        text: 'Неудалось получить записи',
+        icon: 'error'
+      })
+    })
+}
+
+const recordingVideo = ref({} as HTMLMediaElement)
+
+const recordingQualityLevels = ref([] as Level[])
+const recordingVideoQuality = ref()
+
+function playRecording(path: string) {
+  const recordingMasterPlaylistUrl = `${window.gatewayURL}/stream/rec/${path}`
+
+  if (Hls.isSupported()) {
+    hls.attachMedia(recordingVideo.value)
+    hls.loadSource(recordingMasterPlaylistUrl)
+
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      recordingQualityLevels.value = hls.levels
+
+      recordingVideo.value.play()
+    })
+  }
+}
+
+const videoOptions = ref({
+  autoplay: true,
+  controls: true,
+  sources: [
+    {
+      src: '/path/to/video.mp4',
+      type: 'video/mp4'
+    }
+  ]
+})
+
 watchEffect(() => {
   if (videoQuality.value) {
     hls.currentLevel = videoQuality.value
@@ -81,11 +133,13 @@ watchEffect(() => {
 
 onMounted(() => {
   getChannelData()
+  getRecordings()
 })
 </script>
 
 <template>
   <div>
+    <h1 class="text-6xl">{{ channelData.id }}</h1>
     <h1 class="text-6xl">{{ channelData.channel_name }}</h1>
     <h2 class="text-6xl">{{ channelData.live ? 'Онлайн' : 'Оффлайн' }}</h2>
     <h2 class="text-6xl">{{ channelData.rf_active_stream_id }}</h2>
@@ -114,5 +168,31 @@ onMounted(() => {
       </select>
     </div>
     <video ref="video" controls></video>
+  </div>
+
+  <div>
+    <h1>Записи</h1>
+    <div>
+      <div v-for="(rec, idx) in recordings" :key="idx">
+        {{ rec.channel_name }} {{ rec.date }} {{ rec.duration }}
+        <button @click="playRecording(rec.path)">play</button>
+      </div>
+    </div>
+    <div id="recordingQualitySelector" v-if="!!recordingQualityLevels.length">
+      <select
+        v-model="recordingVideoQuality"
+        @change="
+          () => {
+            hls.currentLevel = parseInt(recordingVideoQuality)
+          }
+        "
+      >
+        <option v-for="(level, index) in recordingQualityLevels" :key="index" :value="index">
+          {{ level.height }}p
+        </option>
+      </select>
+    </div>
+
+    <VideoPlayer ref="recordingVideo" :options="videoOptions" />
   </div>
 </template>

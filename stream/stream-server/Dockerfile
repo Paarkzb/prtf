@@ -20,6 +20,8 @@ WORKDIR /app/
 
 COPY --from=0 /app/config config/
 COPY --from=0 /app/server ./
+COPY ./internal/scripts/save_record.sh /var/scripts/save_record.sh
+
 # COPY --from=0 /app/.env ./
 
 ENTRYPOINT [ "./server" ]

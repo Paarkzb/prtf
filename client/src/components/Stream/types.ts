@@ -24,3 +24,18 @@ export class Channel {
     this.updated_at = updated_at
   }
 }
+
+export class Recording {
+  id
+  date
+  duration
+  channel_name
+  path
+  constructor(id: string, date: Date, duration: string, channel_name: string, path: string) {
+    this.id = id
+    this.date = date
+    this.duration = duration
+    this.channel_name = channel_name
+    this.path = path
+  }
+}

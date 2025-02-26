@@ -164,6 +164,37 @@ func (r *RepositoryPostgres) GetActiveChannels(ctx context.Context) ([]models.Ch
 	return channels, nil
 }
 
+func (r *RepositoryPostgres) GetChannelRecordings(ctx context.Context, channelID uuid.UUID) ([]models.Recording, error) {
+	const op = "Repository.postgres.GetChannelRecordings"
+
+	query := `
+		SELECT s.id, c.channel_name, s.recording_path, s.created_at, s.duration
+		FROM public.streams as s
+		INNER JOIN public.channels as c ON c.id = s.rf_channel_id AND c.rf_active_stream_id != s.id
+		WHERE c.id = $1
+	`
+
+	var recordings []models.Recording
+
+	rows, err := r.db.Query(ctx, query, channelID)
+	if err != nil {
+		return nil, fmt.Errorf("%s:%w", op, err)
+	}
+
+	for rows.Next() {
+		var recording models.Recording
+		err = rows.Scan(&recording.ID, &recording.ChannelName, &recording.Path, &recording.Date, &recording.Duration)
+		if err != nil {
+			return nil, fmt.Errorf("%s:%w", op, err)
+		}
+
+		recordings = append(recordings, recording)
+	}
+	rows.Close()
+
+	return recordings, nil
+}
+
 func (r *RepositoryPostgres) StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error) {
 	const op = "Repository.postgres.StartStream"
 
@@ -192,6 +223,53 @@ func (r *RepositoryPostgres) StartStream(ctx context.Context, channelID uuid.UUI
 	`
 
 	_, err = tx.Exec(ctx, query, streamID, channelID)
+	if err != nil {
+		_ = tx.Rollback(ctx)
+		return uuid.Nil, fmt.Errorf("%s:%w", op, err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		_ = tx.Rollback(ctx)
+		return uuid.Nil, fmt.Errorf("%s:%w", op, err)
+	}
+
+	return streamID, nil
+}
+
+func (r *RepositoryPostgres) EndStream(ctx context.Context, channelID uuid.UUID, recordPath string) (uuid.UUID, error) {
+	const op = "Repository.postgres.EndStream"
+
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	query := `
+		UPDATE public.streams
+		SET recording_path = $1,
+			duration = $2
+		WHERE public.streams.id = (
+			SELECT c.rf_active_stream_id
+			FROM public.channels as c
+			WHERE c.id = $3
+		)
+		RETURNING public.streams.id
+		
+	`
+	var streamID uuid.UUID
+
+	err = tx.QueryRow(ctx, query, recordPath, "1 hour", channelID).Scan(&streamID)
+	if err != nil {
+		_ = tx.Rollback(ctx)
+		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	query = `
+		UPDATE public.channels SET rf_active_stream_id = uuid_nil(), live=false WHERE public.channels.id = $1
+	`
+
+	_, err = tx.Exec(ctx, query, channelID)
 	if err != nil {
 		_ = tx.Rollback(ctx)
 		return uuid.Nil, fmt.Errorf("%s:%w", op, err)

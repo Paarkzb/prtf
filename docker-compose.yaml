@@ -135,6 +135,8 @@ services:
     depends_on:
       - stream-postgres
     volumes:
+      - prtf-streams:/var/hls
+      - prtf-recordings:/var/rec
       - prtf-vod:/var/vod
     networks:
       - prtf-net
@@ -181,7 +183,7 @@ services:
   stream-redis:
     image: redis:7-alpine
     hostname: prtf-stream-redis
-    command: redis-server --save 60 1 --loglevel warning
+    command: redis-server --save 60 1 --loglevel warning --requirepass "redis"
     ports:
       - 6390:6379
     environment:
