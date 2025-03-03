@@ -6,6 +6,7 @@
 
 <script>
 import videojs from 'video.js'
+import 'video.js/dist/video-js.css'
 
 export default {
   name: 'VideoPlayer',
@@ -23,9 +24,20 @@ export default {
     }
   },
   mounted() {
-    this.player = videojs(this.$refs.videoPlayer, this.options, () => {
-      this.player.log('onPlayerReady', this)
-    })
+    this.initializePlayer()
+  },
+  methods: {
+    initializePlayer() {
+      this.player = videojs(this.$refs.videoPlayer, this.options, () => {
+        this.player.log('onPlayerReady', this)
+      })
+
+      // this.player.ready(() => {
+      //   this.player.hlsQualitySelector({
+      //     displayCurrentQuality: true
+      //   })
+      // })
+    }
   },
   beforeUnmount() {
     if (this.player) {

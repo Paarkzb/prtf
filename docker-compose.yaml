@@ -16,6 +16,7 @@ services:
       - ./traefik/certs:/etc/certs
     networks:
       - prtf-net
+    restart: unless-stopped
 
   # web:
   #   build:

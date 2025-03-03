@@ -54,7 +54,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	streamApi := mux.Group("/streams", h.userIdentity)
 	{
-		streamApi.GET("", h.listStreams)
+		streamApi.GET("/:id", h.getRecordingById)
 	}
 
 	// mux.Handle("/vod/", http.StripPrefix("/vod/", http.FileServer(http.Dir("/var/vod"))))
@@ -64,7 +64,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		channelApi.POST("", h.saveChannel)
 		channelApi.GET("", h.getAllChannels)
 		channelApi.GET("/:id", h.getChannelById)
-		channelApi.GET("/:id/recordings", h.listChannelRecordings)
+		channelApi.GET("/:id/recordings", h.getChannelRecordings)
 
 		channelApi.GET("/user", h.getChannelByUserId)
 	}
