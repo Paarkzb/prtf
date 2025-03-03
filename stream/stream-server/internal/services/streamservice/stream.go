@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os/exec"
 	"videostream/internal/domain/models"
 
 	"github.com/google/uuid"
@@ -26,6 +27,7 @@ type StreamProvider interface {
 	StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error)
 	EndStream(ctx context.Context, channelID uuid.UUID, recordPath string) (uuid.UUID, error)
 	GetActiveChannels(ctx context.Context) ([]models.Channel, error)
+	GetRecordingById(ctx context.Context, recordingID uuid.UUID) (models.Recording, error)
 }
 
 type RedisProvider interface {
@@ -163,12 +165,26 @@ func (s *StreamService) StartStream(ctx context.Context, channelID uuid.UUID) (u
 	return streamID, nil
 }
 
-func (s *StreamService) EndStream(ctx context.Context, channelID uuid.UUID, recordPath string) (uuid.UUID, error) {
+func (s *StreamService) EndStream(ctx context.Context, channel models.Channel) (uuid.UUID, error) {
 	const op = "StreamService.EndStream"
 
-	log := s.log.With("op", op, "channelID", channelID)
+	log := s.log.With("op", op, "channelID", channel.ID)
 
-	streamID, err := s.streamProvider.EndStream(ctx, channelID, recordPath)
+	cmd := exec.Command("sh", "/var/scripts/add_endlist.sh", channel.ChannelName)
+	_, err := cmd.Output()
+	if err != nil {
+		log.Infow("failed to end stream", "err", err)
+		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
+	}
+
+	cmd = exec.Command("sh", "/var/scripts/save_record.sh", channel.ChannelName)
+	recordPath, err := cmd.Output()
+	if err != nil {
+		log.Infow("failed to end stream", "err", err)
+		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
+	}
+
+	streamID, err := s.streamProvider.EndStream(ctx, channel.ID, string(recordPath))
 	if err != nil {
 		log.Infow("failed to end stream", "err", err)
 		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
@@ -203,4 +219,18 @@ func (s *StreamService) GetChannelRecordings(ctx context.Context, channelID uuid
 	}
 
 	return recordings, nil
+}
+
+func (s *StreamService) GetRecordingById(ctx context.Context, recordingID uuid.UUID) (models.Recording, error) {
+	const op = "StreamService.GetChannelRecordings"
+
+	log := s.log.With("op", op, "recordingID", recordingID)
+
+	recording, err := s.streamProvider.GetRecordingById(ctx, recordingID)
+	if err != nil {
+		log.Infow("failed to get recording", "err", err)
+		return recording, fmt.Errorf("%s, %w", op, err)
+	}
+
+	return recording, nil
 }

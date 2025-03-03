@@ -5,6 +5,7 @@ import Swal from 'sweetalert2'
 import Hls, { Level } from 'hls.js'
 import { Channel, Recording } from './types'
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import router from '@/router'
 
 const route = useRoute()
 
@@ -119,8 +120,8 @@ const videoOptions = ref({
   controls: true,
   sources: [
     {
-      src: '/path/to/video.mp4',
-      type: 'video/mp4'
+      src: `${window.gatewayURL}/stream/rec/test_channel/2025-02-26_08:50:19/test_channel.m3u8`,
+      type: 'application/x-mpegURL'
     }
   ]
 })
@@ -175,24 +176,12 @@ onMounted(() => {
     <div>
       <div v-for="(rec, idx) in recordings" :key="idx">
         {{ rec.channel_name }} {{ rec.date }} {{ rec.duration }}
-        <button @click="playRecording(rec.path)">play</button>
+        <button
+          @click="router.push({ name: 'videoById', params: { id: rec.id } })"
+        >
+          play
+        </button>
       </div>
     </div>
-    <div id="recordingQualitySelector" v-if="!!recordingQualityLevels.length">
-      <select
-        v-model="recordingVideoQuality"
-        @change="
-          () => {
-            hls.currentLevel = parseInt(recordingVideoQuality)
-          }
-        "
-      >
-        <option v-for="(level, index) in recordingQualityLevels" :key="index" :value="index">
-          {{ level.height }}p
-        </option>
-      </select>
-    </div>
-
-    <VideoPlayer ref="recordingVideo" :options="videoOptions" />
   </div>
 </template>

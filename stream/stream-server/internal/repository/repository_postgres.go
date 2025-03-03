@@ -195,6 +195,26 @@ func (r *RepositoryPostgres) GetChannelRecordings(ctx context.Context, channelID
 	return recordings, nil
 }
 
+func (r *RepositoryPostgres) GetRecordingById(ctx context.Context, recordingID uuid.UUID) (models.Recording, error) {
+	const op = "Repository.postgres.GetRecordingById"
+
+	query := `
+		SELECT s.id, c.channel_name, s.recording_path, s.created_at, s.duration
+		FROM public.streams as s
+		INNER JOIN public.channels as c ON c.id = s.rf_channel_id AND c.rf_active_stream_id != s.id
+		WHERE s.id = $1
+	`
+
+	var recording models.Recording
+
+	err := r.db.QueryRow(ctx, query, recordingID).Scan(&recording.ID, &recording.ChannelName, &recording.Path, &recording.Date, &recording.Duration)
+	if err != nil {
+		return recording, fmt.Errorf("%s:%w", op, err)
+	}
+
+	return recording, nil
+}
+
 func (r *RepositoryPostgres) StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error) {
 	const op = "Repository.postgres.StartStream"
 
