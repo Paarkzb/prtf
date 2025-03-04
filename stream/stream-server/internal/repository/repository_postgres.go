@@ -115,8 +115,8 @@ func (r *RepositoryPostgres) GetChannelByChannelToken(ctx context.Context, chann
 	return channel, nil
 }
 
-func (r *RepositoryPostgres) GetChannelTokenById(ctx context.Context, channelID uuid.UUID) (string, error) {
-	const op = "Repository.postgres.GetChannelTokenById"
+func (r *RepositoryPostgres) GetChannelTokenByChannelId(ctx context.Context, channelID uuid.UUID) (string, error) {
+	const op = "Repository.postgres.GetChannelTokenByChannelId"
 
 	query := `
 		SELECT c.channel_token
@@ -140,7 +140,7 @@ func (r *RepositoryPostgres) GetActiveChannels(ctx context.Context) ([]models.Ch
 	query := `
 		SELECT c.id, c.rf_user_id, c.channel_name, c.live, c.rf_active_stream_id, c.channel_token, c.created_at, c.updated_at
 		FROM public.channels as c
-		WHERE c.rf_active_stream_id = true
+		WHERE c.live = true
 	`
 
 	var channels []models.Channel

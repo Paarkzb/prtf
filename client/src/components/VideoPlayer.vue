@@ -7,6 +7,7 @@
 <script>
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
+import 'videojs-hls-quality-selector/src/plugin'
 
 export default {
   name: 'VideoPlayer',
@@ -31,12 +32,7 @@ export default {
       this.player = videojs(this.$refs.videoPlayer, this.options, () => {
         this.player.log('onPlayerReady', this)
       })
-
-      // this.player.ready(() => {
-      //   this.player.hlsQualitySelector({
-      //     displayCurrentQuality: true
-      //   })
-      // })
+      this.player.hlsQualitySelector()
     }
   },
   beforeUnmount() {

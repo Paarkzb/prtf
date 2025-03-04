@@ -98,3 +98,19 @@ func (h *Handler) endStream(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 }
+
+func (h *Handler) getActiveStreams(c *gin.Context) {
+	// userId, err := h.getUserId(c)
+	// if err != nil {
+	// 	h.newErrorResponse(c, http.StatusBadRequest, err.Error())
+	// 	return
+	// }
+
+	channels, err := h.streamService.GetActiveChannels(c)
+	if err != nil {
+		h.newErrorResponse(c, http.StatusInternalServerError, "failed to get active channels")
+		return
+	}
+
+	c.JSON(http.StatusOK, channels)
+}

@@ -41,6 +41,7 @@ func (h *Handler) getAllChannels(c *gin.Context) {
 func (h *Handler) getChannelById(c *gin.Context) {
 	// userId, err := h.getUserId(c)
 	// if err != nil {
+	// h.newErrorResponse(c, http.StatusBadRequest, err.Error())
 	// 	return
 	// }
 
@@ -63,6 +64,7 @@ func (h *Handler) getChannelById(c *gin.Context) {
 func (h *Handler) getChannelByUserId(c *gin.Context) {
 	userId, err := h.getUserId(c)
 	if err != nil {
+		h.newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

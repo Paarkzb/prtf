@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref, watchEffect } from 'vue'
-import Hls, { Level } from 'hls.js'
+import { onMounted, ref } from 'vue'
 import router from '@/router'
 import Swal from 'sweetalert2'
 import { useChannelStore } from '@/stores/store'
-import { Channel, Recording } from './types'
+import { Channel } from './types'
 
 // Чат
 const ws = new WebSocket('ws://prtf.localhost:8090/stream/chat/ws')
@@ -38,24 +37,14 @@ function sendMessage() {
   }
 }
 
-const hls = new Hls({
-  enableWorker: true,
-  autoStartLoad: true,
-  capLevelToPlayerSize: true
-})
-
 // Стрим
-
 const activeStreams = ref({})
-const recordings = ref([] as Recording[])
-const qualityLevels = ref([] as Level[])
-const videoQuality = ref()
 
 function getActiveStreams() {
   window.axios
     .get(window.gatewayURL + '/stream/api/streams')
     .then((streams) => {
-      activeStreams.value = Object.keys(streams.data)
+      activeStreams.value = streams.data
     })
     .catch((error) => {
       console.log(error)
@@ -65,54 +54,6 @@ function getActiveStreams() {
         icon: 'error'
       })
     })
-}
-
-const video = ref({} as HTMLMediaElement)
-
-function playStream(streamKey: string) {
-  const masterPlaylistUrl = `${window.gatewayURL}/stream/hls/${streamKey}.m3u8`
-
-  if (Hls.isSupported()) {
-    hls.attachMedia(video.value)
-    hls.loadSource(masterPlaylistUrl)
-
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      qualityLevels.value = hls.levels
-
-      video.value.play()
-    })
-  }
-}
-
-watchEffect(() => {
-  if (videoQuality.value) {
-    hls.currentLevel = videoQuality.value
-  }
-})
-
-function getRecordings() {
-  window.axios
-    .get(window.gatewayURL + '/stream/api/recordings')
-    .then((rec) => {
-      console.log(rec.data)
-      recordings.value = rec.data
-    })
-    .catch((error) => {
-      console.log(error)
-      Swal.fire({
-        title: 'Ошибка',
-        text: 'Неудалось получить записи',
-        icon: 'error'
-      })
-    })
-}
-
-const recordingVideo = ref({} as HTMLMediaElement)
-function playRecording(path: string) {
-  const recordingUrl = `${window.gatewayURL}/stream/vod/${path}`
-  recordingVideo.value.src = recordingUrl
-  recordingVideo.value.load()
-  recordingVideo.value.play()
 }
 
 // Канал
@@ -174,19 +115,20 @@ function getChannels() {
 onMounted(() => {
   getMyChannel()
   getActiveStreams()
-  getRecordings()
   getChannels()
 })
 </script>
 
 <template>
-  <button @click="saveChannel()" class="p-2 border bg-blue-300">Создать канал</button>
-  <button
-    @click="router.push({ name: 'channelById', params: { id: channelStore.channel.id } })"
-    class="p-2 border bg-blue-300"
-  >
-    Мой канал
-  </button>
+  <div class="flex gap-x-5">
+    <button @click="saveChannel()" class="p-2 border bg-blue-300">Создать канал</button>
+    <button
+      @click="router.push({ name: 'channelById', params: { id: channelStore.channel.id } })"
+      class="p-2 border bg-blue-300"
+    >
+      Мой канал
+    </button>
+  </div>
 
   <h1 class="text-4xl text-center">Список каналов</h1>
   <div>
@@ -200,37 +142,14 @@ onMounted(() => {
     </div>
   </div>
 
-  <!-- <h1>Active Streams</h1>
+  <h1>Active Streams</h1>
   <div>
     <div v-for="stream in activeStreams" :key="stream">
-      <button @click="playStream(stream)">{{ stream }}</button>
+      <button>{{ stream }}</button>
     </div>
   </div>
-  <div id="qualitySelector" v-if="!!qualityLevels.length">
-    {{ videoQuality }}
-    <select
-      v-model="videoQuality"
-      @change="
-        () => {
-          hls.currentLevel = parseInt(videoQuality)
-        }
-      "
-    >
-      <option v-for="(level, index) in qualityLevels" :key="index" :value="index">
-        {{ level.height }}p
-      </option>
-    </select>
-  </div>
-  <video ref="video" controls></video>
 
-  <div>
-    <div v-for="(rec, idx) in recordings" :key="idx">
-      {{ rec.name }} <button @click="playRecording(rec.path)">play</button>
-    </div>
-  </div>
-  <video ref="recordingVideo" controls width="640"></video>
-
-  <div class="chat-box">
+  <!-- <div class="chat-box">
     <div>
       <div v-for="(msg, idx) in chatMessages" :key="idx">
         <b>{{ msg.username }}</b

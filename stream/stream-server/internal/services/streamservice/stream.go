@@ -19,7 +19,7 @@ type ChannelProvider interface {
 	GetChannelById(ctx context.Context, channelID uuid.UUID) (models.Channel, error)
 	GetChannelByUserId(ctx context.Context, userId uuid.UUID) (models.Channel, error)
 	GetChannelByChannelToken(ctx context.Context, channelToken string) (models.Channel, error)
-	GetChannelTokenById(ctx context.Context, channelID uuid.UUID) (string, error)
+	GetChannelTokenByChannelId(ctx context.Context, channelID uuid.UUID) (string, error)
 	GetChannelRecordings(ctx context.Context, channelID uuid.UUID) ([]models.Recording, error)
 }
 
@@ -170,14 +170,7 @@ func (s *StreamService) EndStream(ctx context.Context, channel models.Channel) (
 
 	log := s.log.With("op", op, "channelID", channel.ID)
 
-	cmd := exec.Command("sh", "/var/scripts/add_endlist.sh", channel.ChannelName)
-	_, err := cmd.Output()
-	if err != nil {
-		log.Infow("failed to end stream", "err", err)
-		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
-	}
-
-	cmd = exec.Command("sh", "/var/scripts/save_record.sh", channel.ChannelName)
+	cmd := exec.Command("sh", "/var/scripts/save_record.sh", channel.ChannelName)
 	recordPath, err := cmd.Output()
 	if err != nil {
 		log.Infow("failed to end stream", "err", err)
@@ -200,7 +193,7 @@ func (s *StreamService) GetActiveChannels(ctx context.Context) ([]models.Channel
 
 	channels, err := s.streamProvider.GetActiveChannels(ctx)
 	if err != nil {
-		log.Infow("failed to start stream", "err", err)
+		log.Infow("failed to get active channels", "err", err)
 		return nil, fmt.Errorf("%s, %w", op, err)
 	}
 
@@ -233,4 +226,18 @@ func (s *StreamService) GetRecordingById(ctx context.Context, recordingID uuid.U
 	}
 
 	return recording, nil
+}
+
+func (s *StreamService) GetChannelTokenByChannelId(ctx context.Context, channelID uuid.UUID) (string, error) {
+	const op = "StreamService.GetChannelTokenByChannelId"
+
+	log := s.log.With("op", op, "channelID", channelID)
+
+	channelToken, err := s.channelProvider.GetChannelTokenByChannelId(ctx, channelID)
+	if err != nil {
+		log.Infow("failed to get channel token", "err", err)
+		return "", fmt.Errorf("%s, %w", op, err)
+	}
+
+	return channelToken, nil
 }
