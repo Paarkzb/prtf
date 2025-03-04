@@ -4,6 +4,7 @@ export class Channel {
   channel_name
   live
   rf_active_stream_id
+  channel_token
   created_at
   updated_at
   constructor(
@@ -12,6 +13,7 @@ export class Channel {
     channel_name: string,
     live: boolean,
     rf_active_stream_id: string,
+    channel_token: string,
     created_at: Date,
     updated_at: Date
   ) {
@@ -20,6 +22,7 @@ export class Channel {
     this.channel_name = channel_name
     this.live = live
     this.rf_active_stream_id = rf_active_stream_id
+    this.channel_token = channel_token
     this.created_at = created_at
     this.updated_at = updated_at
   }

@@ -59,6 +59,11 @@ const router = createRouter({
       component: () => import('../views/stream/ChannelDataView.vue')
     },
     {
+      path: '/stream/channel/:id/settings',
+      name: 'channelByIdSettings',
+      component: () => import('../views/stream/ChannelSettingsView.vue')
+    },
+    {
       path: '/stream/video/:id',
       name: 'videoById',
       component: () => import('../views/stream/VideoView.vue')
