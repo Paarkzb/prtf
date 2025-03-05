@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 	"videostream/internal/domain/models"
 
 	"github.com/google/uuid"
@@ -138,7 +139,7 @@ func (r *RepositoryPostgres) GetActiveChannels(ctx context.Context) ([]models.Ch
 	const op = "Repository.postgres.GetActiveChannels"
 
 	query := `
-		SELECT c.id, c.rf_user_id, c.channel_name, c.live, c.rf_active_stream_id, c.channel_token, c.created_at, c.updated_at
+		SELECT c.id, c.rf_user_id, c.channel_name, c.live, c.rf_active_stream_id, c.icon, c.created_at, c.updated_at
 		FROM public.channels as c
 		WHERE c.live = true
 	`
@@ -152,7 +153,7 @@ func (r *RepositoryPostgres) GetActiveChannels(ctx context.Context) ([]models.Ch
 
 	for rows.Next() {
 		var channel models.Channel
-		err = rows.Scan(&channel.ID, &channel.RfUserID, &channel.ChannelName, &channel.Live, &channel.RfActiveStreamID, &channel.CreatedAt, &channel.UpdatedAt)
+		err = rows.Scan(&channel.ID, &channel.RfUserID, &channel.ChannelName, &channel.Live, &channel.RfActiveStreamID, &channel.Icon, &channel.CreatedAt, &channel.UpdatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("%s:%w", op, err)
 		}
@@ -168,7 +169,7 @@ func (r *RepositoryPostgres) GetChannelRecordings(ctx context.Context, channelID
 	const op = "Repository.postgres.GetChannelRecordings"
 
 	query := `
-		SELECT s.id, c.channel_name, s.recording_path, s.created_at, s.duration
+		SELECT s.id, c.channel_name, s.recording_path, s.created_at, s.duration, s.poster
 		FROM public.streams as s
 		INNER JOIN public.channels as c ON c.id = s.rf_channel_id AND c.rf_active_stream_id != s.id
 		WHERE c.id = $1
@@ -183,7 +184,7 @@ func (r *RepositoryPostgres) GetChannelRecordings(ctx context.Context, channelID
 
 	for rows.Next() {
 		var recording models.Recording
-		err = rows.Scan(&recording.ID, &recording.ChannelName, &recording.Path, &recording.Date, &recording.Duration)
+		err = rows.Scan(&recording.ID, &recording.ChannelName, &recording.Path, &recording.Date, &recording.Duration, &recording.Poster)
 		if err != nil {
 			return nil, fmt.Errorf("%s:%w", op, err)
 		}
@@ -199,7 +200,7 @@ func (r *RepositoryPostgres) GetRecordingById(ctx context.Context, recordingID u
 	const op = "Repository.postgres.GetRecordingById"
 
 	query := `
-		SELECT s.id, c.channel_name, s.recording_path, s.created_at, s.duration
+		SELECT s.id, c.channel_name, s.recording_path, s.created_at, s.duration, s.poster
 		FROM public.streams as s
 		INNER JOIN public.channels as c ON c.id = s.rf_channel_id AND c.rf_active_stream_id != s.id
 		WHERE s.id = $1
@@ -207,7 +208,7 @@ func (r *RepositoryPostgres) GetRecordingById(ctx context.Context, recordingID u
 
 	var recording models.Recording
 
-	err := r.db.QueryRow(ctx, query, recordingID).Scan(&recording.ID, &recording.ChannelName, &recording.Path, &recording.Date, &recording.Duration)
+	err := r.db.QueryRow(ctx, query, recordingID).Scan(&recording.ID, &recording.ChannelName, &recording.Path, &recording.Date, &recording.Duration, &recording.Poster)
 	if err != nil {
 		return recording, fmt.Errorf("%s:%w", op, err)
 	}
@@ -257,7 +258,7 @@ func (r *RepositoryPostgres) StartStream(ctx context.Context, channelID uuid.UUI
 	return streamID, nil
 }
 
-func (r *RepositoryPostgres) EndStream(ctx context.Context, channelID uuid.UUID, recordPath string) (uuid.UUID, error) {
+func (r *RepositoryPostgres) EndStream(ctx context.Context, channelID uuid.UUID, recordPath string, duration time.Duration, posterPath string) (uuid.UUID, error) {
 	const op = "Repository.postgres.EndStream"
 
 	tx, err := r.db.Begin(ctx)
@@ -267,19 +268,20 @@ func (r *RepositoryPostgres) EndStream(ctx context.Context, channelID uuid.UUID,
 
 	query := `
 		UPDATE public.streams
-		SET recording_path = $1,
-			duration = $2
+		SET recording_path = $2,
+			duration = $3,
+			poster = $4
 		WHERE public.streams.id = (
 			SELECT c.rf_active_stream_id
 			FROM public.channels as c
-			WHERE c.id = $3
+			WHERE c.id = $1
 		)
 		RETURNING public.streams.id
 		
 	`
 	var streamID uuid.UUID
 
-	err = tx.QueryRow(ctx, query, recordPath, "1 hour", channelID).Scan(&streamID)
+	err = tx.QueryRow(ctx, query, channelID, recordPath, duration, posterPath).Scan(&streamID)
 	if err != nil {
 		_ = tx.Rollback(ctx)
 		return uuid.Nil, fmt.Errorf("%s: %w", op, err)

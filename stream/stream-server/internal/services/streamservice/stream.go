@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"strconv"
+	"time"
 	"videostream/internal/domain/models"
 
 	"github.com/google/uuid"
@@ -25,7 +27,7 @@ type ChannelProvider interface {
 
 type StreamProvider interface {
 	StartStream(ctx context.Context, channelID uuid.UUID) (uuid.UUID, error)
-	EndStream(ctx context.Context, channelID uuid.UUID, recordPath string) (uuid.UUID, error)
+	EndStream(ctx context.Context, channelID uuid.UUID, recordPath string, duration time.Duration, posterPath string) (uuid.UUID, error)
 	GetActiveChannels(ctx context.Context) ([]models.Channel, error)
 	GetRecordingById(ctx context.Context, recordingID uuid.UUID) (models.Recording, error)
 }
@@ -171,13 +173,37 @@ func (s *StreamService) EndStream(ctx context.Context, channel models.Channel) (
 	log := s.log.With("op", op, "channelID", channel.ID)
 
 	cmd := exec.Command("sh", "/var/scripts/save_record.sh", channel.ChannelName)
-	recordPath, err := cmd.Output()
+	recordDirBytes, err := cmd.Output()
 	if err != nil {
-		log.Infow("failed to end stream", "err", err)
+		log.Infow("failed to save record", "err", err)
+		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
+	}
+	recordDir := string(recordDirBytes)
+	recordPath := fmt.Sprintf("%s%s%s%s", recordDir, "/", channel.ChannelName, ".m3u8")
+
+	cmd = exec.Command("sh", "/var/scripts/get_duration.sh", recordDir, channel.ChannelName)
+	durationOut, err := cmd.Output()
+	if err != nil {
+		log.Infow("failed to get duration", "err", err)
 		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
 	}
 
-	streamID, err := s.streamProvider.EndStream(ctx, channel.ID, string(recordPath))
+	seconds, err := strconv.ParseFloat(string(durationOut), 64)
+	if err != nil {
+		log.Infow("failed to parse duration", "err", err)
+		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
+	}
+	duration := time.Duration(seconds * float64(time.Second))
+
+	cmd = exec.Command("sh", "/var/scripts/save_poster.sh", recordDir, channel.ChannelName)
+	posterPathBytes, err := cmd.Output()
+	if err != nil {
+		log.Infow("failed to get duration", "err", err)
+		return uuid.Nil, fmt.Errorf("%s, %w", op, err)
+	}
+	posterPath := string(posterPathBytes)
+
+	streamID, err := s.streamProvider.EndStream(ctx, channel.ID, recordPath, duration, posterPath)
 	if err != nil {
 		log.Infow("failed to end stream", "err", err)
 		return uuid.Nil, fmt.Errorf("%s, %w", op, err)

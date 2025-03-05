@@ -34,11 +34,20 @@ export class Recording {
   duration
   channel_name
   path
-  constructor(id: string, date: Date, duration: string, channel_name: string, path: string) {
+  poster
+  constructor(
+    id: string,
+    date: Date,
+    duration: string,
+    channel_name: string,
+    path: string,
+    poster: string
+  ) {
     this.id = id
     this.date = date
     this.duration = duration
     this.channel_name = channel_name
     this.path = path
+    this.poster = poster
   }
 }

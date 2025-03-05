@@ -16,11 +16,12 @@ RUN go test ./tests -count=1 -v
 
 FROM alpine:latest AS build-release-stage
 
+RUN apk update && apk add ffmpeg imagemagick
+
 WORKDIR /app/
 
 COPY --from=0 /app/config config/
 COPY --from=0 /app/server ./
-COPY ./internal/scripts/ /var/scripts/
 
 # COPY --from=0 /app/.env ./
 

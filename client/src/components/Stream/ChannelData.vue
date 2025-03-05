@@ -6,6 +6,8 @@ import { Channel, Recording } from './types'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import router from '@/router'
 
+const gateway = ref(window.gatewayURL)
+
 const route = useRoute()
 const id = route.params.id
 
@@ -99,7 +101,8 @@ onMounted(() => {
     <h1>Записи</h1>
     <div>
       <div v-for="(rec, idx) in recordings" :key="idx">
-        {{ rec.channel_name }} {{ rec.date }} {{ rec.duration }}
+        {{ rec.channel_name }} {{ rec.date }} {{ rec.duration }} {{ rec.poster }}
+        <img :src="gateway + '/stream/rec/' + rec.poster" alt="no poster" />
         <button @click="router.push({ name: 'videoById', params: { id: rec.id } })">play</button>
       </div>
     </div>
