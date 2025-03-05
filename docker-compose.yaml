@@ -139,6 +139,7 @@ services:
       - prtf-streams:/var/hls
       - prtf-recordings:/var/rec
       - prtf-vod:/var/vod
+      - ./stream/scripts/:/var/scripts/
     networks:
       - prtf-net
     deploy:

@@ -18,6 +18,7 @@ function getRecording(id: string) {
     .get(window.gatewayURL + '/stream/api/streams/' + id)
     .then((rec) => {
       recording.value = rec.data
+      console.log('test', recording.value)
       setVideoOptions(recording.value!.path)
     })
     .catch((error) => {
