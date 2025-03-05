@@ -5,8 +5,8 @@ import Swal from 'sweetalert2'
 import { Channel, Recording } from './types'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import router from '@/router'
-
-const gateway = ref(window.gatewayURL)
+import VideoPanel from './VideoPanel.vue'
+import { FwbButton, FwbAvatar } from 'flowbite-vue'
 
 const route = useRoute()
 const id = route.params.id
@@ -83,27 +83,40 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <h1 class="text-6xl">{{ channelData.channel_name }}</h1>
-    <h2 class="text-4xl">{{ channelData.live ? 'Онлайн' : 'Оффлайн' }}</h2>
+  <div class="flex justify-between">
+    <div>
+      <div class="flex gap-x-2 text-gray-100">
+        <div>
+          <fwb-avatar
+            status-position="bottom-right"
+            rounded
+            size="lg"
+            :status="channelData.live ? 'online' : 'offline'"
+          />
+        </div>
+        <div class="flex items-center text-xl">
+          {{ channelData.channel_name }}
+        </div>
+      </div>
+    </div>
+    <div class="text-white flex items-center">
+      <fwb-button
+        color="light"
+        @click="router.push({ name: 'channelByIdSettings', params: { id: channelData.id } })"
+      >
+        Настройки
+      </fwb-button>
+    </div>
   </div>
-  <div>
-    <button @click="router.push({ name: 'channelByIdSettings', params: { id: channelData.id } })">
-      Настройки
-    </button>
-  </div>
-  <div>
-    <h1>Стрим</h1>
+  <div class="mt-10">
     <div v-if="channelData.id"><VideoPlayer ref="recordingVideo" :options="videoOptions" /></div>
   </div>
 
-  <div>
-    <h1>Записи</h1>
-    <div>
+  <div class="mt-10">
+    <h2 class="text-3xl my-2">Все видео</h2>
+    <div class="grid grid-cols-3 gap-4">
       <div v-for="(rec, idx) in recordings" :key="idx">
-        {{ rec.channel_name }} {{ rec.date }} {{ rec.duration }} {{ rec.poster }}
-        <img :src="gateway + '/stream/rec/' + rec.poster" alt="no poster" />
-        <button @click="router.push({ name: 'videoById', params: { id: rec.id } })">play</button>
+        <VideoPanel :recording="rec" />
       </div>
     </div>
   </div>

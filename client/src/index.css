@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 @media print {
-    body {
-      visibility: hidden;
-    }
-    #printarea {
-      visibility: visible;
-      position: absolute;
-      left: 0;
-      top: 0;
-    }
+  body {
+    visibility: hidden;
   }
+  #printarea {
+    visibility: visible;
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}
