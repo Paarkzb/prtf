@@ -1,3 +1,5 @@
+import type { Duration } from 'moment'
+
 export class Channel {
   id
   rf_user_id
@@ -38,7 +40,7 @@ export class Recording {
   constructor(
     id: string,
     date: Date,
-    duration: string,
+    duration: number,
     channel_name: string,
     path: string,
     poster: string
