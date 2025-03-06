@@ -6,7 +6,7 @@ import { Channel, Recording } from './types'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import router from '@/router'
 import VideoPanel from './VideoPanel.vue'
-import { FwbButton, FwbHeading } from 'flowbite-vue'
+import { FwbButton, FwbHeading, FwbTab, FwbTabs, FwbP } from 'flowbite-vue'
 import ChannelAvatar from './ChannelAvatar.vue'
 import moment from 'moment'
 
@@ -78,6 +78,8 @@ function setVideoOptions() {
   }
 }
 
+const activeTab = ref('first')
+
 onMounted(() => {
   getChannelData()
   getRecordings()
@@ -101,11 +103,27 @@ onMounted(() => {
   </div>
 
   <div class="mt-10">
-    <fwb-heading tag="h2" class="my-2">Все видео</fwb-heading>
-    <div class="grid grid-cols-3 gap-4">
-      <div v-for="(rec, idx) in recordings.sort((a, b) => moment(b.date).diff(a.date))" :key="idx">
-        <VideoPanel :recording="rec" />
-      </div>
-    </div>
+    <fwb-tabs v-model="activeTab" class="p-5">
+      <fwb-tab name="first" title="Описание">
+        <fwb-p>
+          Lorem ipsum dolor, sit amet consectetur adipisicing elit. Temporibus nemo quidem vero
+          blanditiis dolor ut a dignissimos sint quis harum praesentium distinctio, aliquam dicta
+          nulla ducimus alias non magnam! Eaque fugit doloribus nesciunt dolor accusantium incidunt,
+          in odio ipsa libero nam qui rerum sint iure ratione repellendus voluptas animi dicta.
+        </fwb-p>
+      </fwb-tab>
+      <fwb-tab name="second" title="Все видео">
+        <div>
+          <div class="grid grid-cols-3 gap-4">
+            <div
+              v-for="(rec, idx) in recordings.sort((a, b) => moment(b.date).diff(a.date))"
+              :key="idx"
+            >
+              <VideoPanel :recording="rec" />
+            </div>
+          </div>
+        </div>
+      </fwb-tab>
+    </fwb-tabs>
   </div>
 </template>
