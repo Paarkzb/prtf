@@ -2,8 +2,9 @@
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { useRoute } from 'vue-router'
 import { onMounted, ref } from 'vue'
-import { Recording } from './types'
+import { Channel, Recording } from './types'
 import Swal from 'sweetalert2'
+import ChannelAvatar from './ChannelAvatar.vue'
 
 const route = useRoute()
 
@@ -18,14 +19,33 @@ function getRecording(id: string) {
     .get(window.gatewayURL + '/stream/api/streams/' + id)
     .then((rec) => {
       recording.value = rec.data
-      console.log('test', recording.value)
       setVideoOptions(recording.value!.path)
+      getChannelData(recording.value!.channel_id)
     })
     .catch((error) => {
       console.log(error)
       Swal.fire({
         title: 'Ошибка',
         text: 'Неудалось получить запись',
+        icon: 'error'
+      })
+    })
+}
+
+const channelData = ref({} as Channel)
+
+function getChannelData(channelID: string) {
+  window.axios
+    .get(window.gatewayURL + '/stream/api/channels/' + channelID)
+    .then((rec) => {
+      console.log(rec.data)
+      channelData.value = rec.data
+    })
+    .catch((error) => {
+      console.log(error)
+      Swal.fire({
+        title: 'Ошибка',
+        text: 'Неудалось получить записи',
         icon: 'error'
       })
     })
@@ -61,4 +81,5 @@ onMounted(() => {
 </script>
 <template>
   <div v-if="recording"><VideoPlayer ref="recordingVideo" :options="videoOptions" /></div>
+  <div class="mt-4"><ChannelAvatar :channel="channelData" imgSize="md" /></div>
 </template>

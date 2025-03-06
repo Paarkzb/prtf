@@ -30,7 +30,14 @@ const hours = duration.hours()
       <div>Название стрима</div>
       <div>{{ recording.channel_name }}</div>
       <div>
-        {{ duration.humanize() + ' назад' }}
+        {{
+          hours > 0
+            ? moment.utc(duration.asMilliseconds()).format('HH:mm:ss')
+            : moment.utc(duration.asMilliseconds()).format('mm:ss')
+        }}
+      </div>
+      <div>
+        {{ moment(recording.date).format('DD.MM.YYYY HH:mm') }}
       </div>
     </div>
   </fwb-card>

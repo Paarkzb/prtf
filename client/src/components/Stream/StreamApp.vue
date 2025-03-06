@@ -4,7 +4,10 @@ import router from '@/router'
 import Swal from 'sweetalert2'
 import { useChannelStore } from '@/stores/store'
 import { Channel } from './types'
-
+import { FwbButton, FwbHeading } from 'flowbite-vue'
+import ChannelAvatar from './ChannelAvatar.vue'
+import { RouterLink } from 'vue-router'
+import ChannelData from './ChannelData.vue'
 // Чат
 const ws = new WebSocket('ws://prtf.localhost:8090/stream/chat/ws')
 
@@ -38,13 +41,13 @@ function sendMessage() {
 }
 
 // Стрим
-const activeStreams = ref({})
+const activeChannels = ref([] as Channel[])
 
 function getActiveStreams() {
   window.axios
     .get(window.gatewayURL + '/stream/api/streams')
     .then((streams) => {
-      activeStreams.value = streams.data
+      activeChannels.value = streams.data
     })
     .catch((error) => {
       console.log(error)
@@ -120,32 +123,32 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex gap-x-5">
-    <button @click="saveChannel()" class="p-2 border bg-blue-300">Создать канал</button>
-    <button
+  <div>
+    <fwb-button
+      v-if="channelStore.channel.id"
       @click="router.push({ name: 'channelById', params: { id: channelStore.channel.id } })"
-      class="p-2 border bg-blue-300"
+      color="green"
     >
       Мой канал
-    </button>
+    </fwb-button>
+    <fwb-button v-else color="yellow" @click="saveChannel()">Создать канал</fwb-button>
   </div>
 
-  <h1 class="text-4xl text-center">Список каналов</h1>
-  <div>
+  <fwb-heading tag="h1" class="text-center">Список каналов</fwb-heading>
+  <div class="flex flex-wrap gap-x-4">
     <div v-for="(channel, idx) in channels" :key="idx">
-      <button
-        class="p-2 bg-red-300 border"
-        @click="router.push({ name: 'channelById', params: { id: channel.id } })"
-      >
-        {{ channel.channel_name }} {{ channel.live ? 'Онлайн' : 'Оффлайн' }}
-      </button>
+      <router-link :to="{ name: 'channelById', params: { id: channel.id } }"
+        ><ChannelAvatar :channel="channel" imgSize="md"
+      /></router-link>
     </div>
   </div>
 
-  <h1>Active Streams</h1>
+  <fwb-heading tag="h2" class="text-center mt-4">Активные каналы</fwb-heading>
   <div>
-    <div v-for="stream in activeStreams" :key="stream">
-      <button>{{ stream }}</button>
+    <div v-for="channel in activeChannels" :key="channel.id">
+      <router-link :to="{ name: 'channelById', params: { id: channel.id } }"
+        ><ChannelAvatar :channel="channel" imgSize="md"
+      /></router-link>
     </div>
   </div>
 

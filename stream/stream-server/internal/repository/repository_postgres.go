@@ -200,7 +200,7 @@ func (r *RepositoryPostgres) GetRecordingById(ctx context.Context, recordingID u
 	const op = "Repository.postgres.GetRecordingById"
 
 	query := `
-		SELECT s.id, c.channel_name, s.recording_path, s.created_at, s.duration, s.poster
+		SELECT s.id, s.rf_channel_id, c.channel_name, s.recording_path, s.created_at, s.duration, s.poster
 		FROM public.streams as s
 		INNER JOIN public.channels as c ON c.id = s.rf_channel_id AND c.rf_active_stream_id != s.id
 		WHERE s.id = $1
@@ -208,7 +208,7 @@ func (r *RepositoryPostgres) GetRecordingById(ctx context.Context, recordingID u
 
 	var recording models.Recording
 
-	err := r.db.QueryRow(ctx, query, recordingID).Scan(&recording.ID, &recording.ChannelName, &recording.Path, &recording.Date, &recording.Duration, &recording.Poster)
+	err := r.db.QueryRow(ctx, query, recordingID).Scan(&recording.ID, &recording.ChannelId, &recording.ChannelName, &recording.Path, &recording.Date, &recording.Duration, &recording.Poster)
 	if err != nil {
 		return recording, fmt.Errorf("%s:%w", op, err)
 	}

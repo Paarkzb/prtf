@@ -6,7 +6,9 @@ import { Channel, Recording } from './types'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import router from '@/router'
 import VideoPanel from './VideoPanel.vue'
-import { FwbButton, FwbAvatar } from 'flowbite-vue'
+import { FwbButton, FwbHeading } from 'flowbite-vue'
+import ChannelAvatar from './ChannelAvatar.vue'
+import moment from 'moment'
 
 const route = useRoute()
 const id = route.params.id
@@ -84,21 +86,7 @@ onMounted(() => {
 
 <template>
   <div class="flex justify-between">
-    <div>
-      <div class="flex gap-x-2 text-gray-100">
-        <div>
-          <fwb-avatar
-            status-position="bottom-right"
-            rounded
-            size="lg"
-            :status="channelData.live ? 'online' : 'offline'"
-          />
-        </div>
-        <div class="flex items-center text-xl">
-          {{ channelData.channel_name }}
-        </div>
-      </div>
-    </div>
+    <ChannelAvatar :channel="channelData" />
     <div class="text-white flex items-center">
       <fwb-button
         color="light"
@@ -113,9 +101,9 @@ onMounted(() => {
   </div>
 
   <div class="mt-10">
-    <h2 class="text-3xl my-2">Все видео</h2>
+    <fwb-heading tag="h2" class="my-2">Все видео</fwb-heading>
     <div class="grid grid-cols-3 gap-4">
-      <div v-for="(rec, idx) in recordings" :key="idx">
+      <div v-for="(rec, idx) in recordings.sort((a, b) => moment(b.date).diff(a.date))" :key="idx">
         <VideoPanel :recording="rec" />
       </div>
     </div>
