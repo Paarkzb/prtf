@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ChatMessage } from '@/components/Chat/types'
 import { parse, stringify } from 'zipson'
-
+import { Channel, ChannelData } from '@/components/Stream/types'
 interface LoginResp {
   tokens: {
     access_token: string
@@ -42,29 +42,18 @@ export const useUserStore = defineStore('user', {
   persist: true
 })
 
-interface ChannelData {
-  id: string
-  rf_user_id: string
-  live: boolean
-  rf_active_stream_id: string
-  created_at: string
-  updated_at: string
-}
-
 export const useChannelStore = defineStore('channel', {
   state: () => ({
-    channel: {
-      id: '',
-      rf_user_id: '',
-      live: false,
-      rf_active_stream_id: '',
-      created_at: '',
-      updated_at: ''
-    }
+    channel: {} as ChannelData
   }),
   actions: {
-    login(channelData: ChannelData) {
-      this.channel = channelData
+    login(channel: ChannelData) {
+      this.channel.id = channel.id || ''
+      this.channel.channel_name = channel.channel_name || ''
+      this.channel.icon = channel.icon || ''
+    },
+    logout() {
+      this.channel = {} as ChannelData
     }
   },
   persist: true

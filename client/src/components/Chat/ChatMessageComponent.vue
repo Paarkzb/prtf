@@ -10,7 +10,7 @@ const msg: ChatMessage = props.message!
 </script>
 
 <template>
-  <div class="block bg-white mt-[10px] px-[20px] py-[10px] rounded-md clear-both shadow-inherit">
+  <div class="block bg-zinc-800 mt-[10px] px-[20px] py-[10px] rounded-md clear-both shadow-inherit">
     {{ msg.body }}
   </div>
 </template>

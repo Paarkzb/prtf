@@ -1,5 +1,3 @@
-import type { Duration } from 'moment'
-
 export class Channel {
   id
   rf_user_id
@@ -33,6 +31,17 @@ export class Channel {
   }
 }
 
+export class ChannelData {
+  id
+  channel_name
+  icon
+  constructor(id: string, channel_name: string, icon: string) {
+    this.id = id
+    this.channel_name = channel_name
+    this.icon = icon
+  }
+}
+
 export class Recording {
   id
   channel_id
@@ -57,5 +66,18 @@ export class Recording {
     this.channel_name = channel_name
     this.path = path
     this.poster = poster
+  }
+}
+
+export class ChatMessage {
+  stream_id
+  text
+  time
+  channel
+  constructor(stream_id: string, text: string, time: string, channel: ChannelData) {
+    this.stream_id = stream_id
+    this.text = text
+    this.time = time
+    this.channel = channel
   }
 }

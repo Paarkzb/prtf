@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { onMounted, ref } from 'vue'
 import { Channel, Recording } from './types'
 import Swal from 'sweetalert2'
-import ChannelAvatar from './ChannelAvatar.vue'
+import ChannelAvatar from './Channel/ChannelAvatar.vue'
 
 const route = useRoute()
 
@@ -80,6 +80,6 @@ onMounted(() => {
 })
 </script>
 <template>
-  <div v-if="recording"><VideoPlayer ref="recordingVideo" :options="videoOptions" /></div>
+  <div v-if="recording"><VideoPlayer :options="videoOptions" /></div>
   <div class="mt-4"><ChannelAvatar :channel="channelData" imgSize="md" /></div>
 </template>

@@ -2,13 +2,14 @@
 import { useRoute } from 'vue-router'
 import { onMounted, ref } from 'vue'
 import Swal from 'sweetalert2'
-import { Channel, Recording } from './types'
+import { Channel, Recording, ChatMessage } from '../types'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import router from '@/router'
-import VideoPanel from './VideoPanel.vue'
+import VideoPanel from '../VideoPanel.vue'
 import { FwbButton, FwbHeading, FwbTab, FwbTabs, FwbP } from 'flowbite-vue'
 import ChannelAvatar from './ChannelAvatar.vue'
 import moment from 'moment'
+import ChatComponent from '../Chat/ChatComponent.vue'
 
 const route = useRoute()
 const id = route.params.id
@@ -80,6 +81,8 @@ function setVideoOptions() {
 
 const activeTab = ref('first')
 
+const recordingVideo = ref()
+
 onMounted(() => {
   getChannelData()
   getRecordings()
@@ -99,7 +102,11 @@ onMounted(() => {
     </div>
   </div>
   <div class="mt-10">
-    <div v-if="channelData.id"><VideoPlayer ref="recordingVideo" :options="videoOptions" /></div>
+    <div v-if="channelData.id"><VideoPlayer :options="videoOptions" /></div>
+  </div>
+
+  <div class="my-10">
+    <ChatComponent :channel="channelData" />
   </div>
 
   <div class="mt-10">

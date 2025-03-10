@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { useUserStore } from '@/stores/store'
+import { useUserStore, useChannelStore } from '@/stores/store'
 import {
   FwbNavbar,
   FwbNavbarCollapse,
@@ -10,9 +10,11 @@ import {
   FwbListGroupItem
 } from 'flowbite-vue'
 const store = useUserStore()
+const channel = useChannelStore()
 
 function logout() {
   store.$reset()
+  channel.$reset()
 }
 </script>
 

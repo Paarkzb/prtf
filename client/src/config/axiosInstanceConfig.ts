@@ -1,13 +1,19 @@
 import axios from 'axios'
 import router from '@/router'
+import { useUserStore } from '@/stores/store'
 
-const axiosInstance = axios.create()
-axiosInstance.defaults.timeout = 2500
+const axiosInstance = axios.create({
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+
 axiosInstance.interceptors.request.use(
   function (config) {
-    config.withCredentials = true
-    config.headers.Authorization =
-      'Bearer ' + JSON.parse(localStorage.getItem('user') || '')?.tokens.access_token
+    const store = useUserStore()
+    if (store.tokens) {
+      config.headers.Authorization = 'Bearer ' + store.tokens.access_token
+    }
     return config
   },
   function (error) {
@@ -20,6 +26,8 @@ axiosInstance.interceptors.response.use(
   },
   function (error) {
     if (error.response?.status == 401) {
+      const store = useUserStore()
+      store.logout()
       router.push({ name: 'login' })
     }
     return Promise.reject(error)
