@@ -104,7 +104,7 @@ onMounted(() => {
 
   <fwb-heading tag="h1" class="text-center">Список каналов</fwb-heading>
   <div class="flex flex-wrap gap-x-4">
-    <div v-for="(channel, idx) in channels" :key="idx">
+    <div v-for="channel in channels" :key="channel.id">
       <ChannelAvatar :channel="channel" imgSize="md" />
     </div>
   </div>

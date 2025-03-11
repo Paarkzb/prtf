@@ -11,7 +11,7 @@ const props = defineProps({
     required: true
   },
   imgSize: {
-    type: Object as PropType<AvatarSize>,
+    type: String as PropType<AvatarSize>,
     default: () => {
       return 'lg' as AvatarSize
     }

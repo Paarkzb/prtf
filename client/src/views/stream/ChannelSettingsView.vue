@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ChannelSettings from '../../components/Stream/ChannelSettings.vue'
+import ChannelSettings from '@/components/Stream/Channel/ChannelSettings.vue'
 </script>
 <template>
   <div>

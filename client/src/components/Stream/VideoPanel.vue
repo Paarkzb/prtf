@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, ref } from 'vue'
+import { defineProps, ref, type PropType } from 'vue'
 import { Recording } from './types'
 import router from '@/router'
 import { FwbCard } from 'flowbite-vue'
@@ -9,7 +9,7 @@ const gateway = ref(window.gatewayURL)
 
 const props = defineProps({
   recording: {
-    type: Recording,
+    type: Object as PropType<Recording>,
     required: true
   }
 })

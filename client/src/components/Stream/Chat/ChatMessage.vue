@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps } from 'vue'
+import { defineProps, type PropType } from 'vue'
 import { ChatMessage } from '../types'
 import moment from 'moment'
 import { FwbP } from 'flowbite-vue'
@@ -7,7 +7,7 @@ import router from '@/router'
 
 const props = defineProps({
   message: {
-    type: ChatMessage,
+    type: Object as PropType<ChatMessage>,
     required: true
   }
 })

@@ -6,9 +6,8 @@
     <div class="flex justify-center">
       <div class="w-[40%] border border-white rounded-md bg-zinc-800 min-h-[200px]">
         <div class="p-5">
-          <div class="bg-white rounded-md px-2 inline-block">НЕ В СЕТИ</div>
-          <p class="font-normal text-gray-700 dark:text-gray-400">
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Possimus, id.
+          <p class="flex items-center font-normal text-gray-700 dark:text-gray-400">
+            Видео не доступно
           </p>
         </div>
       </div>
@@ -51,11 +50,10 @@ function initializePlayer() {
 function checkVideoAvailability(url) {
   return window.axios
     .head(url)
-    .then(() => {
+    .then((res) => {
       return true
     })
     .catch((error) => {
-      console.error('error while checking video availability:', error)
       return false
     })
 }

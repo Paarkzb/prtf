@@ -1,6 +1,6 @@
 import axios from 'axios'
 import router from '@/router'
-import { useUserStore } from '@/stores/store'
+import { useChannelStore, useUserStore } from '@/stores/store'
 
 const axiosInstance = axios.create({
   headers: {
@@ -27,7 +27,9 @@ axiosInstance.interceptors.response.use(
   function (error) {
     if (error.response?.status == 401) {
       const store = useUserStore()
+      const channel = useChannelStore()
       store.logout()
+      channel.logout()
       router.push({ name: 'login' })
     }
     return Promise.reject(error)

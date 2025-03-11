@@ -4,13 +4,15 @@ import (
 	"chat-server/internal/domain/models"
 	"log"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
 type Client struct {
-	Channel models.Channel
-	Conn    *websocket.Conn
-	Poll    *Pool
+	Channel       models.Channel
+	Conn          *websocket.Conn
+	Poll          *Pool
+	StreamChannelID uuid.UUID
 }
 
 func (c *Client) Read() {

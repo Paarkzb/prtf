@@ -2,8 +2,14 @@
 import { defineProps } from 'vue'
 import ChatMessage from './ChatMessage.vue'
 import { FwbHeading } from 'flowbite-vue'
+import { ChatMessage as chatMsg } from '../types'
 
-const props = defineProps(['chatMessages'])
+const props = defineProps({
+  chatMessages: {
+    type: Array<chatMsg>,
+    required: true
+  }
+})
 </script>
 
 <template>

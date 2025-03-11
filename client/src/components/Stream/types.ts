@@ -70,11 +70,19 @@ export class Recording {
 }
 
 export class ChatMessage {
+  stream_channel_id
   stream_id
   text
   time
   channel
-  constructor(stream_id: string, text: string, time: string, channel: ChannelData) {
+  constructor(
+    stream_channel_id: string,
+    stream_id: string,
+    text: string,
+    time: string,
+    channel: ChannelData
+  ) {
+    this.stream_channel_id = stream_channel_id
     this.stream_id = stream_id
     this.text = text
     this.time = time

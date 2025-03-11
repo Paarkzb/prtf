@@ -29,9 +29,10 @@ func serverWS(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &websocket.Client{
-		Channel: msg.Channel,
-		Poll:    pool,
-		Conn:    conn,
+		Channel:         msg.Channel,
+		Poll:            pool,
+		Conn:            conn,
+		StreamChannelID: msg.StreamChannelId,
 	}
 
 	pool.Register <- client
