@@ -158,7 +158,7 @@ services:
     networks:
       - prtf-net
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@prtf-stream-postgres:5490/postgres?sslmode=disable
+      - CONFIG_PATH=./config/local.yaml
     depends_on:
       - stream-postgres
     deploy:

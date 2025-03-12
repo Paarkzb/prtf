@@ -1,4 +1,4 @@
-package websocket
+package websocketservice
 
 import (
 	"chat-server/internal/domain/models"
@@ -11,7 +11,7 @@ import (
 type Client struct {
 	Channel       models.Channel
 	Conn          *websocket.Conn
-	Poll          *Pool
+	Poll          *pool
 	StreamChannelID uuid.UUID
 }
 
